@@ -1,0 +1,237 @@
+import abc
+import types
+from collections import defaultdict
+from functools import partial
+
+import asyncio
+import logging
+from typing import Union, Callable, Type
+
+import aiohttp
+
+from .tools import json, Lazy
+from .route import WebSocketRoute
+
+
+class ClientException(Exception):
+    pass
+
+
+class PingTimeoutError(Exception):
+    pass
+
+
+def ping(obj, *args, **kwargs):
+    return 'pong'
+
+
+log = logging.getLogger(__name__)
+
+
+class WSRPCBase:
+    _ROUTES = defaultdict(lambda: {'ping': ping})
+    _CLIENTS = defaultdict(dict)
+    _CLEAN_LOCK_TIMEOUT = 2
+
+    __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks', '_futures', '_serial')
+
+    def __init__(self, loop=None):
+        self._loop = loop or asyncio.get_event_loop()
+        self._handlers = {}
+        self._pending_tasks = set()
+        self._serial = 0
+        self._locks = defaultdict(partial(asyncio.Lock, loop=self._loop))
+        self._futures = defaultdict(self._loop.create_future)
+
+    def _create_task(self, coro):
+        task = self._loop.create_task(coro)      # type: asyncio.Task
+        self._pending_tasks.add(task)
+        task.add_done_callback(partial(self._pending_tasks.remove))
+
+        return task
+
+    def _call_later(self, timer, callback, *args, **kwargs):
+        def handler():
+            self._create_task(asyncio.coroutine(callback)(*args, **kwargs))
+
+        handle = self._loop.call_later(timer, handler)
+        return handle
+
+    async def close(self):
+        for task in tuple(self._pending_tasks):
+            task.cancel()
+
+            if isinstance(task, asyncio.TimerHandle):
+                continue
+
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                log.exception("Unhandled exception when closing client connection")
+
+    async def _handle_message(self, msg: aiohttp.WSMessage):
+        if msg.type == aiohttp.WSMsgType.TEXT:
+            self._create_task(self.on_message(msg))
+        elif msg.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED):
+            self._create_task(self.close())
+        elif msg.type == aiohttp.WSMsgType.ERROR:
+            raise aiohttp.WebSocketError
+        else:
+            log.warning("Unhandled message %r %r", msg.type, msg.data)
+
+    @classmethod
+    def get_routes(cls):
+        return cls._ROUTES[cls]
+
+    @classmethod
+    def get_clients(cls):
+        return cls._CLIENTS[cls]
+
+    @property
+    def routes(self) -> dict:
+        return self.get_routes()
+
+    @property
+    def clients(self) -> dict:
+        return self.get_clients()
+
+    @staticmethod
+    def _prepare_args(args):
+        arguments = []
+        kwargs = {}
+
+        if isinstance(args, type(None)):
+            return arguments, kwargs
+
+        if isinstance(args, list):
+            arguments.extend(args)
+        elif isinstance(args, dict):
+            kwargs.update(args)
+        else:
+            arguments.append(args)
+
+        return arguments, kwargs
+
+    async def on_message(self, message: aiohttp.WSMessage):
+        # deserialize message
+        data = message.json(loads=json.loads)
+        serial = data.get('serial', -1)
+        msg_type = data.get('type', 'call')
+
+        assert serial >= 0
+
+        log.debug("Acquiring lock for %s serial %s", self, serial)
+        async with self._locks[serial]:
+            try:
+                if msg_type == 'call':
+                    args, kwargs = self._prepare_args(data.get('arguments', None))
+                    callback = data.get('call', None)
+
+                    if callback is None:
+                        raise ValueError('Require argument "call" does\'t exist.')
+
+                    callee = self.resolver(callback)
+                    calee_is_route = hasattr(callee, '__self__') and isinstance(callee.__self__, WebSocketRoute)
+                    if not calee_is_route:
+                        a = [self]
+                        a.extend(args)
+                        args = a
+
+                    result = await self._executor(partial(callee, *args, **kwargs))
+                    self._send(data=result, serial=serial, type='callback')
+
+                elif msg_type == 'callback':
+                    cb = self._futures.pop(serial, None)
+                    cb.set_result(data.get('data', None))
+
+                elif msg_type == 'error':
+                    self._reject(data.get('serial', -1), data.get('data', None))
+                    log.error('Client return error: \n\t{0}'.format(data.get('data', None)))
+
+            except Exception as e:
+                log.exception(e)
+                self._send(data=self._format_error(e), serial=serial, type='error')
+
+            finally:
+                def clean_lock():
+                    log.debug("Release and delete lock for %s serial %s", self, serial)
+                    if serial in self._locks:
+                        self._locks.pop(serial)
+
+                self._call_later(self._CLEAN_LOCK_TIMEOUT, clean_lock)
+
+    @abc.abstractstaticmethod
+    def _send(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def _format_error(e):
+        return {'type': str(type(e).__name__), 'message': str(e)}
+
+    def _reject(self, serial, error):
+        future = self._futures.get(serial)
+
+        if not future:
+            return
+
+        future.set_exception(ClientException(error))
+
+    def _unresolvable(self, *args, **kwargs):
+        raise NotImplementedError('Callback function not implemented')
+
+    def resolver(self, func_name):
+        class_name, method = func_name.split('.') if '.' in func_name else (func_name, 'init')
+        callee = self.routes.get(class_name, self._unresolvable)
+
+        condition = (
+            callee == self._unresolvable or
+            isinstance(getattr(callee, '__self__', None), WebSocketRoute) or (
+                not isinstance(callee, types.FunctionType) and issubclass(callee, WebSocketRoute)
+            )
+        )
+
+        if condition:
+            if self._handlers.get(class_name, None) is None:
+                self._handlers[class_name] = callee(self)
+
+            return self._handlers[class_name]._resolve(method)  # noqa
+
+        callee = self.routes.get(func_name, self._unresolvable)
+        if hasattr(callee, '__call__'):
+            return callee
+        else:
+            raise NotImplementedError('Method call of {0} is not implemented'.format(repr(callee)))
+
+    def _get_serial(self):
+        self._serial += 2
+        return self._serial
+
+    def call(self, func, callback=None, **kwargs):
+        serial = self._get_serial()
+
+        future = self._futures[serial]
+
+        if callback is not None:
+            future.add_done_callback(callback)
+
+        self._send(serial=serial, type='call', call=func, arguments=kwargs)
+
+        if callback is None:
+            return future
+
+    @classmethod
+    def add_route(cls, route: str, handler: Union[WebSocketRoute, Callable]):
+        assert callable(handler) or isinstance(handler, WebSocketRoute)
+        cls.get_routes()[route] = handler
+
+    def __repr__(self):
+        if hasattr(self, 'id'):
+            return "<RPCWebSocket: ID[{0}]>".format(self.id)
+        else:
+            return "<RPCWebsocket: {0} (waiting)>".format(self.__hash__())
+
+    @abc.abstractstaticmethod
+    async def _executor(self, func):
+        raise NotImplementedError
