@@ -1,24 +1,17 @@
 # encoding: utf-8
-import abc
-import logging
-import time
-import uuid
-import struct
-from typing import Callable, Union
-
-import aiohttp
 import asyncio
-import types
+import logging
+import uuid
 from collections import defaultdict
-
-from aiohttp import web, WSMessage, WebSocketError, hdrs
 from functools import partial
 
+import aiohttp
+from aiohttp import web, WSMessage, WebSocketError
 from aiohttp.abc import AbstractView
 
+from .common import WSRPCBase, ClientException
 from .route import WebSocketRoute
 from .tools import Lazy, json
-from .common import WSRPCBase, ClientException
 
 global_log = logging.getLogger("wsrpc")
 log = logging.getLogger("wsrpc.handler")
@@ -53,28 +46,33 @@ class WebSocketBase(WSRPCBase, AbstractView):
     def __await__(self):
         return (yield from self.__iter__())
 
+    async def authorize(self) -> bool:
+        return True
+
     async def __handle_request(self):
         self.socket = web.WebSocketResponse()
 
-        protocol_version = self.request.headers.get(hdrs.SEC_WEBSOCKET_VERSION, '')
-        if protocol_version and protocol_version.isdigit():
-            self.protocol_version = int(protocol_version)
+        if not await self.authorize():
+            return web.HTTPForbidden()
 
         await self.socket.prepare(self.request)
 
-        self.clients[self.id] = self
-        self._create_task(self._start_ping())
+        try:
+            self.clients[self.id] = self
+            self._create_task(self._start_ping())
 
-        async for msg in self.socket:
-            try:
-                await self._handle_message(msg)
-            except WebSocketError:
-                log.error('Client connection %s closed with exception %s', self.id, self.socket.exception())
-                break
-        else:
-            log.info('Client connection %s closed', self.id)
+            async for msg in self.socket:
+                try:
+                    await self._handle_message(msg)
+                except WebSocketError:
+                    log.error('Client connection %s closed with exception %s', self.id, self.socket.exception())
+                    break
+            else:
+                log.info('Client connection %s closed', self.id)
 
-        return self.socket
+            return self.socket
+        finally:
+            await self.close()
 
     @classmethod
     def broadcast(cls, func, callback=WebSocketRoute.placebo, **kwargs):
@@ -184,13 +182,21 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
             try:
                 resp = await future
+                if not resp:
+                    continue
+
                 delta = (self._loop.time() - resp.get('seq', 0))
 
                 log.debug("%r Pong recieved: %.4f" % (self, delta))
 
+            except asyncio.CancelledError:
+                break
             except TimeoutError:
                 log.info('Client "%r" connection should be closed because ping timeout', self)
                 self._loop.create_task(self.close())
+                break
+            except Exception:
+                log.exception('Error when ping remote side.')
                 break
 
             if delta > self._CLIENT_TIMEOUT:
@@ -202,7 +208,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
             await asyncio.sleep(self._KEEPALIVE_PING_TIMEOUT, loop=self._loop)
 
 
-class WebSocket(WebSocketBase):
+class WebSocketAsync(WebSocketBase):
     async def _executor(self, func):
         return await asyncio.coroutine(func)()
 

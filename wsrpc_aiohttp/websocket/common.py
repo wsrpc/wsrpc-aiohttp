@@ -5,11 +5,11 @@ from functools import partial
 
 import asyncio
 import logging
-from typing import Union, Callable, Type
+from typing import Union, Callable
 
 import aiohttp
 
-from .tools import json, Lazy
+from .tools import json
 from .route import WebSocketRoute
 
 
@@ -21,11 +21,35 @@ class PingTimeoutError(Exception):
     pass
 
 
-def ping(obj, *args, **kwargs):
-    return 'pong'
+def ping(obj, **kwargs):
+    return kwargs
 
 
 log = logging.getLogger(__name__)
+
+
+class _ProxyMethod:
+    __slots__ = '__call', '__name'
+
+    def __init__(self, call_method, name):
+        self.__call = call_method
+        self.__name = name
+
+    def __call__(self, **kwargs):
+        return self.__call(self.__name, **kwargs)
+
+    def __getattr__(self, item: str):
+        return self.__class__(self.__call, ".".join((self.__name, item)))
+
+
+class _Proxy:
+    __slots__ = '__call',
+
+    def __init__(self, call_method):
+        self.__call = call_method
+
+    def __getattr__(self, item: str):
+        return _ProxyMethod(self.__call, item)
 
 
 class WSRPCBase:
@@ -54,8 +78,7 @@ class WSRPCBase:
         def handler():
             self._create_task(asyncio.coroutine(callback)(*args, **kwargs))
 
-        handle = self._loop.call_later(timer, handler)
-        return handle
+        self._pending_tasks.add(self._loop.call_later(timer, handler))
 
     async def close(self):
         for task in tuple(self._pending_tasks):
@@ -208,23 +231,26 @@ class WSRPCBase:
         self._serial += 2
         return self._serial
 
-    def call(self, func, callback=None, **kwargs):
+    def call(self, func, **kwargs):
         serial = self._get_serial()
 
         future = self._futures[serial]
 
-        if callback is not None:
-            future.add_done_callback(callback)
-
         self._send(serial=serial, type='call', call=func, arguments=kwargs)
 
-        if callback is None:
-            return future
+        return future
 
     @classmethod
     def add_route(cls, route: str, handler: Union[WebSocketRoute, Callable]):
         assert callable(handler) or isinstance(handler, WebSocketRoute)
         cls.get_routes()[route] = handler
+
+    @classmethod
+    def remove_route(cls, route: str, fail=True):
+        if fail:
+            cls.get_routes().pop(route)
+        else:
+            cls.get_routes().pop(route, None)
 
     def __repr__(self):
         if hasattr(self, 'id'):
@@ -235,3 +261,7 @@ class WSRPCBase:
     @abc.abstractstaticmethod
     async def _executor(self, func):
         raise NotImplementedError
+
+    @property
+    def proxy(self):
+        return _Proxy(self.call)

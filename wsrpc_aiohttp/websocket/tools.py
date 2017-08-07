@@ -1,5 +1,3 @@
-import asyncio
-
 try:
     import ujson as json
 except ImportError:
@@ -14,8 +12,4 @@ class Lazy(object):
         return self.func()
 
 
-def future_with_timeout(timeout, loop: asyncio.AbstractEventLoop):
-    future = loop.create_future()      # type: asyncio.Future
-
-
-    return future
+__all__ = ('json', 'Lazy')

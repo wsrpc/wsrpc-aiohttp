@@ -1,31 +1,21 @@
 # encoding: utf-8
-import sys
-
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+import os
+from importlib.machinery import SourceFileLoader
+from setuptools import setup, find_packages
 
 
-__version__ = '0.1.0'
-__author__ = 'Dmitry Orlov <me@mosquito.su>'
-
-
-requirements = ['aiohttp']
-
-if sys.version_info < (3,):
-    requirements.append('futures')
+module = SourceFileLoader("version", os.path.join("wsrpc_aiohttp", "version.py")).load_module()
 
 
 setup(
     name='wsrpc-aiohttp',
-    version=__version__,
-    author=__author__,
+    version=module.__version__,
+    author=module.__author__,
     author_email='me@mosquito.su',
-    license="Apache 2",
-    description="WSRPC WebSocket RPC for aiohttp",
+    license=module.package_license,
+    description=module.package_info,
     platforms="all",
-    url="https://github.com/wsrpc/wsrpc-tornado",
+    url="https://github.com/wsrpc/wsrpc-aiohttp",
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Topic :: Internet',
@@ -43,14 +33,26 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     long_description=open('README.rst').read(),
-    packages=[
-        'wsrpc_aiohttp',
-        'wsrpc_aiohttp.websocket',
-    ],
+    packages=find_packages(exclude=['tests', 'doc']),
     package_data={
         'wsrpc_aiohttp': [
             'static/*'
         ],
     },
-    install_requires=requirements,
+    install_requires=[
+        'aiohttp',
+        'asynctest',
+        'yarl',
+    ],
+    extras_require={
+        'develop': [
+            'coverage!=4.3',
+            'pylama',
+            'pytest',
+            'pytest-cov',
+            'tox>=2.4',
+            'coveralls',
+            'Sphinx',
+        ],
+    }
 )

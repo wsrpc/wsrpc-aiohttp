@@ -1,6 +1,7 @@
-# encoding: utf-8
 import logging
 
+import asyncio
+from . import handler
 
 log = logging.getLogger("wsrpc")
 
@@ -20,15 +21,19 @@ class WebSocketRoute(object):
     @classmethod
     def noproxy(cls, func):
         def wrap(*args, **kwargs):
-            if not func in cls._NOPROXY:
+            if func not in cls._NOPROXY:
                 cls._NOPROXY.append(func)
                 wrap(*args, **kwargs)
 
             return func(*args, **kwargs)
         return wrap
 
-    def __init__(self, obj):
+    def __init__(self, obj: 'handler.WebSocketBase'):
         self.socket = obj
+
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        return self.socket._loop    # noqa
 
     def _resolve(self, method):
         if method.startswith('_'):

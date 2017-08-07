@@ -20,10 +20,22 @@ class WSRPCClient(WSRPCBase):
         self._url = URL(str(endpoint))
         self._session = aiohttp.ClientSession(loop=self._loop)
         self.socket = None
+        self.closed = False
+
+    async def close(self):
+        if self.closed:
+            return
+
+        await super().close()
+
+        if self.socket:
+            await self.socket.close()
+
+        await self._session.close()
 
     async def connect(self):
         self.socket = await self._session.ws_connect(str(self._url))
-        self._loop.create_task(self.__handle_connection())
+        self._create_task(self.__handle_connection())
 
     async def __handle_connection(self):
         while True:
@@ -42,7 +54,7 @@ class WSRPCClient(WSRPCBase):
               )
             self._loop.create_task(self.socket.send_json(kwargs, dumps=json.dumps))
         except aiohttp.WebSocketError:
-            self._create_task(self.close())
+            self._loop.create_task(self.close())
 
     async def _executor(self, func):
         await asyncio.coroutine(func)()
