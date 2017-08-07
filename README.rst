@@ -1,22 +1,22 @@
-WSRPC Tornado
+WSRPC aiohttp
 =============
 
-.. image:: https://travis-ci.org/wsrpc/wsrpc-tornado.svg
-    :target: https://travis-ci.org/wsrpc/wsrpc-tornado
+.. image:: https://travis-ci.org/wsrpc/wsrpc-aiohttp.svg
+    :target: https://travis-ci.org/wsrpc/wsrpc-aiohttp
     :alt: Travis CI
 
-.. image:: https://img.shields.io/pypi/v/wsrpc-tornado.svg
-    :target: https://pypi.python.org/pypi/wsrpc-tornado/
+.. image:: https://img.shields.io/pypi/v/wsrpc-aiohttp.svg
+    :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
     :alt: Latest Version
 
-.. image:: https://img.shields.io/pypi/wheel/wsrpc-tornado.svg
-    :target: https://pypi.python.org/pypi/wsrpc-tornado/
+.. image:: https://img.shields.io/pypi/wheel/wsrpc-aiohttp.svg
+    :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
 
-.. image:: https://img.shields.io/pypi/pyversions/wsrpc-tornado.svg
-    :target: https://pypi.python.org/pypi/wsrpc-tornado/
+.. image:: https://img.shields.io/pypi/pyversions/wsrpc-aiohttp.svg
+    :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
 
-.. image:: https://img.shields.io/pypi/l/wsrpc-tornado.svg
-    :target: https://pypi.python.org/pypi/wsrpc-tornado/
+.. image:: https://img.shields.io/pypi/l/wsrpc-aiohttp.svg
+    :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
 
 Remote Procedure call through WebSocket between browser and tornado.
 
@@ -39,7 +39,7 @@ Installation
 
 Install via pip::
 
-    pip install wsrpc-tornado
+    pip install wsrpc-aiohttp
 
 
 Install ujson if you want::
@@ -140,6 +140,14 @@ frontend:
         RPC.addRoute('notify', function (data) { return data.result; });
         RPC.connect();
     </script>
+
+Documentation
++++++++++++++
+
+All available `documentation here`_.
+
+
+.. _documentation here: https://docs.wsrpc.info/
 
 
 Example
