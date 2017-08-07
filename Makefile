@@ -1,3 +1,6 @@
+release:
+	python3 setup.py sdist bdist_wheel upload
+
 build_doc:
 	make -C docs/ html
 

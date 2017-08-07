@@ -1,7 +1,7 @@
 import logging
 
 import asyncio
-from . import handler
+from . import handler       # noqa
 
 log = logging.getLogger("wsrpc")
 
