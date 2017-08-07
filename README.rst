@@ -21,7 +21,7 @@ WSRPC Tornado
 Remote Procedure call through WebSocket between browser and tornado.
 
 Features
---------
+++++++++
 
 * Initiating call client function from server side.
 * Calling the server method from the client.
@@ -31,6 +31,7 @@ Features
 * Thread-based websocket handler for writing fully-synchronous code (for synchronous database drivers etc.)
 * Protected server-side methods (starts with underline never will be call from clients-side directly)
 * Asynchronous connection protocol. Server or client can call multiple methods with unpredictable ordering of answers.
+* If `ujson`_ is installed messages will be serialize/deserialize with it.
 
 
 Installation

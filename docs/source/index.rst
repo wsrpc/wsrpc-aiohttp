@@ -1,5 +1,6 @@
 .. _wsrpc-aiohttp: https://github.com/wsrpc/wsrpc-aiohttp
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
+.. _ujson: https://pypi.python.org/pypi/ujson
 
 
 Welcome to wsrpc-aiohttp's documentation!
@@ -28,6 +29,20 @@ Welcome to wsrpc-aiohttp's documentation!
 
 
 `wsrpc-aiohttp`_ it's library for writing live web applications with websockets.
+
+
+Features
+++++++++
+
+* Initiating call client function from server side.
+* Calling the server method from the client.
+* Transferring any exceptions from a client side to the server side and vise versa.
+* The frontend-library are well done for usage without any modification.
+* Fully asynchronous server-side functions.
+* Thread-based websocket handler for writing fully-synchronous code (for synchronous database drivers etc.)
+* Protected server-side methods (starts with underline never will be call from clients-side directly)
+* Asynchronous connection protocol. Server or client can call multiple methods with unpredictable ordering of answers.
+* If `ujson`_ is installed messages will be serialize/deserialize with it.
 
 
 Installation
