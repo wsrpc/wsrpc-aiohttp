@@ -23,6 +23,9 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(os.path.dirname('__file__')))
 
+PROJECT_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..'))
+DOC_PATH = os.path.join(PROJECT_PATH, 'docs')
+
 autoclass_content = 'both'
 
 # -- General configuration ------------------------------------------------
@@ -38,8 +41,13 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
-    'sphinx.ext.viewcode'
+    'sphinx.ext.viewcode',
+    'sphinxcontrib.plantuml',
 ]
+
+plantuml = 'java -jar {}'.format(os.path.join(DOC_PATH, 'plantuml.jar'))
+plantuml_output_format = 'svg'
+plantuml_latex_output_format = 'pdf'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

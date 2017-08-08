@@ -186,7 +186,7 @@ class WSRPCBase:
                 self._call_later(self._CLEAN_LOCK_TIMEOUT, clean_lock)
 
     @abc.abstractstaticmethod
-    def _send(self):
+    def _send(self, **kwargs):
         raise NotImplementedError
 
     @staticmethod
