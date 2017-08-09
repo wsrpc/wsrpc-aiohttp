@@ -84,7 +84,7 @@ class WSRPCBase:
         for task in tuple(self._pending_tasks):
             task.cancel()
 
-            if isinstance(task, asyncio.TimerHandle):
+            if not (hasattr(task, '__iter__') or hasattr(task, '__aiter__')):
                 continue
 
             try:
