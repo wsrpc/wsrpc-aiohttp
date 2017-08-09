@@ -11,7 +11,7 @@ from aiohttp.abc import AbstractView
 
 from .common import WSRPCBase, ClientException
 from .route import WebSocketRoute
-from .tools import Lazy, json
+from .tools import Lazy, json, serializer
 
 global_log = logging.getLogger("wsrpc")
 log = logging.getLogger("wsrpc.handler")
@@ -139,7 +139,10 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 Lazy(lambda: str(kwargs.get('serial'))),
                 Lazy(lambda: str(kwargs))
               )
-            self._loop.create_task(self.socket.send_json(kwargs, dumps=json.dumps))
+            self._loop.create_task(self.socket.send_json(
+                kwargs,
+                dumps=lambda x: json.dumps(serializer(x))
+            ))
         except aiohttp.WebSocketError:
             self._create_task(self.close())
 

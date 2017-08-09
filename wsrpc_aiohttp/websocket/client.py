@@ -6,7 +6,7 @@ import logging
 import asyncio
 from yarl import URL
 
-from .tools import Lazy, json
+from .tools import Lazy, json, serializer
 from .common import WSRPCBase
 
 
@@ -52,7 +52,10 @@ class WSRPCClient(WSRPCBase):
                 Lazy(lambda: str(kwargs.get('serial'))),
                 Lazy(lambda: str(kwargs))
               )
-            self._loop.create_task(self.socket.send_json(kwargs, dumps=json.dumps))
+            self._loop.create_task(self.socket.send_json(
+                kwargs,
+                dumps=lambda x: json.dumps(serializer(x))
+            ))
         except aiohttp.WebSocketError:
             self._loop.create_task(self.close())
 
