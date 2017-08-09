@@ -1,4 +1,4 @@
-release:
+release: upload_doc
 	python3 setup.py sdist bdist_wheel upload
 
 build_doc:

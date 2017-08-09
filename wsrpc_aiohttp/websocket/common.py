@@ -216,7 +216,7 @@ class WSRPCBase:
         )
 
         if condition:
-            if self._handlers.get(class_name, None) is None:
+            if class_name not in self._handlers:
                 self._handlers[class_name] = callee(self)
 
             return self._handlers[class_name]._resolve(method)  # noqa
