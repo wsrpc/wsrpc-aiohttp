@@ -157,3 +157,4 @@ Example running there demo_.
 
 
 .. _demo: https://demo.wsrpc.info/
+.. _ujson: https://pypi.python.org/pypi/ujson
