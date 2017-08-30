@@ -21,7 +21,7 @@ WSRPC aiohttp
 Remote Procedure call through WebSocket between browser and tornado.
 
 Features
-++++++++
+--------
 
 * Initiating call client function from server side.
 * Calling the server method from the client.

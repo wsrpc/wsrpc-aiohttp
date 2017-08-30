@@ -21,12 +21,12 @@ def serializer(value):
 
 @serializer.register(tuple)
 @serializer.register(list)
-def _(value):
+def _(value):   # noqa
     return [serializer(i) for i in value]
 
 
 @serializer.register(dict)
-def _(value):
+def _(value):   # noqa
     result = dict()
     for key, value in value.items():
         result[serializer(key)] = serializer(value)
@@ -39,7 +39,7 @@ def _(value):
 @serializer.register(str)
 @serializer.register(type(None))
 @serializer.register(bool)
-def _(value):
+def _(value):   # noqa
     return value
 
 
