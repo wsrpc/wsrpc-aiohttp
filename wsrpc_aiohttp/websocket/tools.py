@@ -19,14 +19,14 @@ def serializer(value):
     raise ValueError("Can't serialize %r" % type(value))
 
 
-@serializer.register(tuple)
+@serializer.register(tuple)     # noqa: W0404
 @serializer.register(list)
-def _(value):   # noqa
+def _(value):
     return [serializer(i) for i in value]
 
 
-@serializer.register(dict)
-def _(value):   # noqa
+@serializer.register(dict)      # noqa: W0404
+def _(value):
     result = dict()
     for key, value in value.items():
         result[serializer(key)] = serializer(value)
@@ -34,16 +34,16 @@ def _(value):   # noqa
     return result
 
 
-@serializer.register(int)
+@serializer.register(int)       # noqa: W0404
 @serializer.register(float)
 @serializer.register(str)
 @serializer.register(type(None))
 @serializer.register(bool)
-def _(value):   # noqa
+def _(value):
     return value
 
 
-@serializer.register(bytes)
+@serializer.register(bytes)     # noqa: W0404
 def _(value):
     return value.decode()
 
