@@ -84,10 +84,14 @@ class WebSocketBase(WSRPCBase, AbstractView):
     async def on_message(self, message: WSMessage):
         log.debug('Client %s send message: "%s"', self.id, message)
 
+        start = self._loop.time()
+
         # deserialize message
         data = message.json(loads=json.loads)
         serial = data.get('serial', -1)
         msg_type = data.get('type', 'call')
+
+        message_repr = ''
 
         assert serial >= 0
 
@@ -97,6 +101,8 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 if msg_type == 'call':
                     args, kwargs = self._prepare_args(data.get('arguments', None))
                     callback = data.get('call', None)
+
+                    message_repr = "call[%s]" % callback
 
                     if callback is None:
                         raise ValueError('Require argument "call" does\'t exist.')
@@ -113,11 +119,16 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
                 elif msg_type == 'callback':
                     cb = self._futures.pop(serial, None)
-                    cb.set_result(data.get('data', None))
+                    payload = data.get('data', None)
+                    cb.set_result(payload)
+
+                    message_repr = "callback[%r]" % payload
 
                 elif msg_type == 'error':
                     self._reject(data.get('serial', -1), data.get('data', None))
                     log.error('Client return error: \n\t{0}'.format(data.get('data', None)))
+
+                    message_repr = "error[%r]" % data
 
             except Exception as e:
                 log.exception(e)
@@ -130,6 +141,16 @@ class WebSocketBase(WSRPCBase, AbstractView):
                         self._locks.pop(serial)
 
                 self._call_later(self._CLIENT_TIMEOUT, clean_lock)
+
+                response_time = self._loop.time() - start
+
+                if response_time > 0.001:
+                    response_time = "%.3f" % response_time
+                else:
+                    # loop.time() resolution is 1 ms.
+                    response_time = "less then 1ms"
+
+                log.info("Response for client \"%s\" #%d finished %s", message_repr, serial, response_time)
 
     def _send(self, **kwargs):
         try:

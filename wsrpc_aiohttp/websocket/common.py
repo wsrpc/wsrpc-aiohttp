@@ -94,6 +94,10 @@ class WSRPCBase:
             except Exception:
                 log.exception("Unhandled exception when closing client connection")
 
+    def _log_call(self, start: float, *args):
+        end = self._loop.time()
+        log.info(end - start)
+
     async def _handle_message(self, msg: aiohttp.WSMessage):
         if msg.type == aiohttp.WSMsgType.TEXT:
             self._create_task(self.on_message(msg))
@@ -236,8 +240,11 @@ class WSRPCBase:
 
         future = self._futures[serial]
 
-        self._send(serial=serial, type='call', call=func, arguments=kwargs)
+        req_type = 'call'
 
+        self._send(serial=serial, type=req_type, call=func, arguments=kwargs)
+
+        log.info("Sending %r request #%d \"%s(%r)\" to the client.", req_type, serial, func, kwargs)
         return future
 
     @classmethod
