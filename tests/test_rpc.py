@@ -40,8 +40,6 @@ class TestServerRPC(BaseTestCase):
 
         client = await self.get_ws_client()
 
-        data = str(uuid.uuid4())
-
         response = await client.proxy.get_data()
         self.assertEqual(response, 1000)
 
@@ -56,8 +54,6 @@ class TestServerRPC(BaseTestCase):
         self.WebSocketHandler.add_route('get_data', DataStore().get_data)
 
         client = await self.get_ws_client()
-
-        data = str(uuid.uuid4())
 
         response = await client.proxy.get_data()
         self.assertEqual(response, 1000)
