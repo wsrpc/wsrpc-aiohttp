@@ -30,3 +30,34 @@ class TestServerRPC(BaseTestCase):
         response = await client.proxy.reverse.get_data()
 
         self.assertEqual(response, data[::-1])
+
+    @async_timeout
+    async def test_call_func(self):
+        def get_data(_):
+            return 1000
+
+        self.WebSocketHandler.add_route('get_data', get_data)
+
+        client = await self.get_ws_client()
+
+        data = str(uuid.uuid4())
+
+        response = await client.proxy.get_data()
+        self.assertEqual(response, 1000)
+
+    @async_timeout
+    async def test_call_method(self):
+        class DataStore:
+            DATA = 1000
+
+            def get_data(self, _):
+                return 1000
+
+        self.WebSocketHandler.add_route('get_data', DataStore().get_data)
+
+        client = await self.get_ws_client()
+
+        data = str(uuid.uuid4())
+
+        response = await client.proxy.get_data()
+        self.assertEqual(response, 1000)

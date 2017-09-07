@@ -215,7 +215,7 @@ class WSRPCBase:
         condition = (
             callee == self._unresolvable or
             isinstance(getattr(callee, '__self__', None), WebSocketRoute) or (
-                not isinstance(callee, types.FunctionType) and issubclass(callee, WebSocketRoute)
+                not isinstance(callee, (types.FunctionType, types.MethodType)) and issubclass(callee, WebSocketRoute)
             )
         )
 
