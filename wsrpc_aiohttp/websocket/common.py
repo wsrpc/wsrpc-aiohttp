@@ -242,9 +242,17 @@ class WSRPCBase:
 
         req_type = 'call'
 
-        self._send(serial=serial, type=req_type, call=func, arguments=kwargs)
+        send_future = self._send(serial=serial, type=req_type, call=func, arguments=kwargs)
 
         log.info("Sending %r request #%d \"%s(%r)\" to the client.", req_type, serial, func, kwargs)
+
+        future = asyncio.ensure_future(asyncio.wait_for(future, 3, loop=self._loop), loop=self._loop)
+
+        def propagate_exception(f):
+            if f.exception():
+                future.set_exception(f.exception())
+        if send_future:
+            send_future.add_done_callback(propagate_exception)
         return future
 
     @classmethod

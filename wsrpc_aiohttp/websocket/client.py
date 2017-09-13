@@ -43,6 +43,8 @@ class WSRPCClient(WSRPCBase):
                 await self._handle_message(message)
             else:
                 log.info('Connection was closed')
+                self._loop.create_task(self.close())
+                break
 
     def _send(self, **kwargs):
         try:
@@ -52,12 +54,17 @@ class WSRPCClient(WSRPCBase):
                 Lazy(lambda: str(kwargs.get('serial'))),
                 Lazy(lambda: str(kwargs))
               )
-            self._loop.create_task(self.socket.send_json(
-                kwargs,
-                dumps=lambda x: json.dumps(serializer(x))
-            ))
-        except aiohttp.WebSocketError:
+
+            if self.socket.closed:
+                raise aiohttp.ClientConnectionError('Connection was closed.')
+
+            send_coro = self.socket.send_json(kwargs, dumps=lambda x: json.dumps(serializer(x)))
+            return self._loop.create_task(send_coro)
+        except aiohttp.WebSocketError as ex:
             self._loop.create_task(self.close())
+            future = self._loop.create_future()
+            future.set_exception(ex)
+            return future
 
     async def _executor(self, func):
         await asyncio.coroutine(func)()
