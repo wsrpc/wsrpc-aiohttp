@@ -15,10 +15,11 @@ log = logging.getLogger(__name__)
 
 class WSRPCClient(WSRPCBase):
 
-    def __init__(self, endpoint: Union[URL, str], loop=None, **kwargs):
+    def __init__(self, endpoint: Union[URL, str], loop=None, timeout=None, **kwargs):
         WSRPCBase.__init__(self, loop=loop)
         self._url = URL(str(endpoint))
         self._session = aiohttp.ClientSession(loop=self._loop, **kwargs)
+        self._timeout = timeout
         self.socket = None
         self.closed = False
 

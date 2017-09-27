@@ -57,13 +57,14 @@ class WSRPCBase:
     _CLIENTS = defaultdict(dict)
     _CLEAN_LOCK_TIMEOUT = 2
 
-    __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks', '_futures', '_serial')
+    __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks', '_futures', '_serial', '_timeout')
 
     def __init__(self, loop=None):
         self._loop = loop or asyncio.get_event_loop()
         self._handlers = {}
         self._pending_tasks = set()
         self._serial = 0
+        self._timeout = None
         self._locks = defaultdict(partial(asyncio.Lock, loop=self._loop))
         self._futures = defaultdict(self._loop.create_future)
 
@@ -246,7 +247,7 @@ class WSRPCBase:
 
         log.info("Sending %r request #%d \"%s(%r)\" to the client.", req_type, serial, func, kwargs)
 
-        future = asyncio.ensure_future(asyncio.wait_for(future, 3, loop=self._loop), loop=self._loop)
+        future = asyncio.ensure_future(asyncio.wait_for(future, self._timeout, loop=self._loop), loop=self._loop)
 
         def propagate_exception(f):
             if f.exception():

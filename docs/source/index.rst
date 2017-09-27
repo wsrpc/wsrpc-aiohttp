@@ -164,7 +164,7 @@ Clone the project:
 
 .. code-block:: shell
 
-    git clone https://github.com/mosquito/wsrpc-aiohttp.git
+    git clone https://github.com/wsrpc/wsrpc-aiohttp.git
     cd wsrpc-aiohttp
 
 
