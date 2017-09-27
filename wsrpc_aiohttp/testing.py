@@ -82,8 +82,8 @@ class BaseTestCase(TestCase):
         app.router.add_route('*', self.path, self.WebSocketHandler)
         return app
 
-    async def get_ws_client(self) -> WSRPCClient:
-        ws_client = WSRPCClient(endpoint=self.url)
+    async def get_ws_client(self, timeout=None) -> WSRPCClient:
+        ws_client = WSRPCClient(endpoint=self.url, timeout=timeout)
         await ws_client.connect()
         self.addCleanup(ws_client.close)
         return ws_client
