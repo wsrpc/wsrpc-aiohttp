@@ -16,6 +16,7 @@ from .route import WebSocketRoute
 class ClientException(Exception):
     pass
 
+
 class PingTimeoutError(Exception):
     pass
 
