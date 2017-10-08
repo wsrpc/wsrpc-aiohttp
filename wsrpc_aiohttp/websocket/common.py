@@ -1,4 +1,5 @@
 import abc
+import ast
 import types
 from collections import defaultdict
 from functools import partial
@@ -15,7 +16,6 @@ from .route import WebSocketRoute
 
 class ClientException(Exception):
     pass
-
 
 class PingTimeoutError(Exception):
     pass
