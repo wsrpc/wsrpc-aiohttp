@@ -23,6 +23,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
     _KEEPALIVE_PING_TIMEOUT = 30
     _CLIENT_TIMEOUT = int(_KEEPALIVE_PING_TIMEOUT / 3)
+    _MAX_CONCURRENT_REQUESTS = 25
 
     def __init__(self, request):
         AbstractView.__init__(self, request)
@@ -32,12 +33,15 @@ class WebSocketBase(WSRPCBase, AbstractView):
         self.id = uuid.uuid4()
         self.protocol_version = None
         self.serial = 0
-        self.socket = None      # type: web.WebSocketResponse
+        self.semaphore = asyncio.Semaphore(self._MAX_CONCURRENT_REQUESTS, loop=self._loop)
 
     @classmethod
-    def configure(cls, keepalive_timeout=_KEEPALIVE_PING_TIMEOUT, client_timeout=_CLIENT_TIMEOUT):
+    def configure(cls, keepalive_timeout=_KEEPALIVE_PING_TIMEOUT, client_timeout=_CLIENT_TIMEOUT,
+                  max_concurrent_requests=_MAX_CONCURRENT_REQUESTS):
+
         cls._KEEPALIVE_PING_TIMEOUT = keepalive_timeout
         cls._CLIENT_TIMEOUT = client_timeout
+        cls._MAX_CONCURRENT_REQUESTS = max_concurrent_requests
 
     @asyncio.coroutine
     def __iter__(self):
@@ -82,75 +86,76 @@ class WebSocketBase(WSRPCBase, AbstractView):
             loop.create_task(client.call, func, callback, **kwargs)
 
     async def on_message(self, message: WSMessage):
-        log.debug('Client %s send message: "%s"', self.id, message)
+        async with self.semaphore:
+            log.debug('Client %s send message: "%s"', self.id, message)
 
-        start = self._loop.time()
+            start = self._loop.time()
 
-        # deserialize message
-        data = message.json(loads=json.loads)
-        serial = data.get('serial', -1)
-        msg_type = data.get('type', 'call')
+            # deserialize message
+            data = message.json(loads=json.loads)
+            serial = data.get('serial', -1)
+            msg_type = data.get('type', 'call')
 
-        message_repr = ''
+            message_repr = ''
 
-        assert serial >= 0
+            assert serial >= 0
 
-        log.debug("Acquiring lock for %s serial %s", self, serial)
-        async with self._locks[serial]:
-            try:
-                if msg_type == 'call':
-                    args, kwargs = self._prepare_args(data.get('arguments', None))
-                    callback = data.get('call', None)
+            log.debug("Acquiring lock for %s serial %s", self, serial)
+            async with self._locks[serial]:
+                try:
+                    if msg_type == 'call':
+                        args, kwargs = self._prepare_args(data.get('arguments', None))
+                        callback = data.get('call', None)
 
-                    message_repr = "call[%s]" % callback
+                        message_repr = "call[%s]" % callback
 
-                    if callback is None:
-                        raise ValueError('Require argument "call" does\'t exist.')
+                        if callback is None:
+                            raise ValueError('Require argument "call" does\'t exist.')
 
-                    callee = self.resolver(callback)
-                    callee_is_route = hasattr(callee, '__self__') and isinstance(callee.__self__, WebSocketRoute)
-                    if not callee_is_route:
-                        a = [self]
-                        a.extend(args)
-                        args = a
+                        callee = self.resolver(callback)
+                        callee_is_route = hasattr(callee, '__self__') and isinstance(callee.__self__, WebSocketRoute)
+                        if not callee_is_route:
+                            a = [self]
+                            a.extend(args)
+                            args = a
 
-                    result = await self._executor(partial(callee, *args, **kwargs))
-                    self._send(data=result, serial=serial, type='callback')
+                        result = await self._executor(partial(callee, *args, **kwargs))
+                        self._send(data=result, serial=serial, type='callback')
 
-                elif msg_type == 'callback':
-                    cb = self._futures.pop(serial, None)
-                    payload = data.get('data', None)
-                    cb.set_result(payload)
+                    elif msg_type == 'callback':
+                        cb = self._futures.pop(serial, None)
+                        payload = data.get('data', None)
+                        cb.set_result(payload)
 
-                    message_repr = "callback[%r]" % payload
+                        message_repr = "callback[%r]" % payload
 
-                elif msg_type == 'error':
-                    self._reject(data.get('serial', -1), data.get('data', None))
-                    log.error('Client return error: \n\t{0}'.format(data.get('data', None)))
+                    elif msg_type == 'error':
+                        self._reject(data.get('serial', -1), data.get('data', None))
+                        log.error('Client return error: \n\t{0}'.format(data.get('data', None)))
 
-                    message_repr = "error[%r]" % data
+                        message_repr = "error[%r]" % data
 
-            except Exception as e:
-                log.exception(e)
-                self._send(data=self._format_error(e), serial=serial, type='error')
+                except Exception as e:
+                    log.exception(e)
+                    self._send(data=self._format_error(e), serial=serial, type='error')
 
-            finally:
-                def clean_lock():
-                    log.debug("Release and delete lock for %s serial %s", self, serial)
-                    if serial in self._locks:
-                        self._locks.pop(serial)
+                finally:
+                    def clean_lock():
+                        log.debug("Release and delete lock for %s serial %s", self, serial)
+                        if serial in self._locks:
+                            self._locks.pop(serial)
 
-                self._call_later(self._CLIENT_TIMEOUT, clean_lock)
+                    self._call_later(self._CLIENT_TIMEOUT, clean_lock)
 
-                response_time = self._loop.time() - start
+                    response_time = self._loop.time() - start
 
-                if response_time > 0.001:
-                    response_time = "%.3f" % response_time
-                else:
-                    # loop.time() resolution is 1 ms.
-                    response_time = "less then 1ms"
+                    if response_time > 0.001:
+                        response_time = "%.3f" % response_time
+                    else:
+                        # loop.time() resolution is 1 ms.
+                        response_time = "less then 1ms"
 
-                log.info("Response for client \"%s\" #%d finished %s", message_repr, serial, response_time)
+                    log.info("Response for client \"%s\" #%d finished %s", message_repr, serial, response_time)
 
     def _send(self, **kwargs):
         try:

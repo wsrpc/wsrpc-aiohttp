@@ -82,11 +82,9 @@ class WSRPCBase:
         self._pending_tasks.add(self._loop.call_later(timer, handler))
 
     async def close(self):
-        for task in tuple(self._pending_tasks):
-            task.cancel()
-
+        async def task_waiter(task):
             if not (hasattr(task, '__iter__') or hasattr(task, '__aiter__')):
-                continue
+                return
 
             try:
                 await task
@@ -94,6 +92,12 @@ class WSRPCBase:
                 pass
             except Exception:
                 log.exception("Unhandled exception when closing client connection")
+
+        for task in tuple(self._pending_tasks):
+            task.cancel()
+
+            if not isinstance(task, asyncio.TimerHandle) and not task.cancelled():
+                self._loop.create_task(task_waiter(task))
 
     def _log_call(self, start: float, *args):
         end = self._loop.time()
@@ -105,6 +109,7 @@ class WSRPCBase:
         elif msg.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED):
             self._create_task(self.close())
         elif msg.type == aiohttp.WSMsgType.ERROR:
+            self._create_task(self.close())
             raise aiohttp.WebSocketError
         else:
             log.warning("Unhandled message %r %r", msg.type, msg.data)
@@ -206,8 +211,8 @@ class WSRPCBase:
 
         future.set_exception(ClientException(error))
 
-    def _unresolvable(self, *args, **kwargs):
-        raise NotImplementedError('Callback function not implemented')
+    def _unresolvable(self, func_name, *args, **kwargs):
+        raise NotImplementedError('Callback function "%r" not implemented' % func_name)
 
     def resolver(self, func_name):
         class_name, method = func_name.split('.') if '.' in func_name else (func_name, 'init')
