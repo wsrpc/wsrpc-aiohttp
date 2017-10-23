@@ -4,7 +4,7 @@ from functools import partial, wraps
 
 import aiohttp.web
 from asynctest import TestCase
-from aiohttp.test_utils import TestClient
+from aiohttp.test_utils import TestClient, TestServer
 from yarl import URL
 
 from .websocket.handler import WebSocketAsync
@@ -80,7 +80,7 @@ class BaseTestCase(TestCase):
         app = aiohttp.web.Application()
         self.path = '/ws/'
         app.router.add_route('*', self.path, self.WebSocketHandler)
-        return app
+        return TestServer(app)
 
     async def get_ws_client(self, timeout=None) -> WSRPCClient:
         ws_client = WSRPCClient(endpoint=self.url, timeout=timeout)
