@@ -40,11 +40,13 @@ setup(
         ],
     },
     install_requires=[
-        'aiohttp',
-        'asynctest',
+        'aiohttp<3',
         'yarl',
     ],
     extras_require={
+        'testing': [
+            'asynctest',
+        ],
         'develop': [
             'coverage!=4.3',
             'pylama',
