@@ -96,7 +96,7 @@ class WSRPCBase:
         for task in tuple(self._pending_tasks):
             task.cancel()
 
-            if not isinstance(task, asyncio.TimerHandle) and not task.cancelled():
+            if hasattr(task, 'cancelled') and not task.cancelled():
                 self._loop.create_task(task_waiter(task))
 
     def _log_call(self, start: float, *args):
@@ -110,7 +110,7 @@ class WSRPCBase:
             self._create_task(self.close())
         elif msg.type == aiohttp.WSMsgType.ERROR:
             self._create_task(self.close())
-            raise aiohttp.WebSocketError
+            raise aiohttp.WebSocketError(code=msg.type.value, message=msg)
         else:
             log.warning("Unhandled message %r %r", msg.type, msg.data)
 
