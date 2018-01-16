@@ -16,6 +16,21 @@ class Lazy(object):
 
 @singledispatch
 def serializer(value):
+    """ singledispatch wrapped function.
+    You might register custom types if you want pass it to the remote side.
+
+    .. code-block:: python
+
+        from wsrpc_aiohttp import serializer
+
+        class MyObject:
+            def __init__(self):
+                self.foo = 'bar'
+
+        @serializer.register(MyObject)
+        def _(value: MyObject) -> dict:
+            return {'myObject': {'foo': value.foo}}
+    """
     raise ValueError("Can't serialize %r" % type(value))
 
 

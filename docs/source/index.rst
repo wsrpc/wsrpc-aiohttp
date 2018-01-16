@@ -30,18 +30,32 @@ Welcome to wsrpc-aiohttp's documentation!
 
 `wsrpc-aiohttp`_ it's library for writing live web applications with websockets.
 
+Table Of Contents
++++++++++++++++++
+
+.. toctree::
+   :glob:
+   :maxdepth: 3
+
+   *-*
+   apidoc
 
 Features
 ++++++++
 
-* Initiating call client function from server side.
-* Calling the server method from the client.
-* Transferring any exceptions from a client side to the server side and vise versa.
+* Two-way RPC
+    * Initiating call client function from server side.
+    * Calling the server method from the client.
+    * Asynchronous connection protocol. Server or client can call
+      multiple methods with unpredictable ordering of answers.
+* Transferring any exceptions from a client side to
+  the server side and vise versa.
 * The frontend-library are well done for usage without any modification.
 * Fully asynchronous server-side functions.
-* Thread-based websocket handler for writing fully-synchronous code (for synchronous database drivers etc.)
-* Protected server-side methods (starts with underline never will be call from clients-side directly)
-* Asynchronous connection protocol. Server or client can call multiple methods with unpredictable ordering of answers.
+* Thread-based websocket handler for writing synchronous code
+  (for synchronous database drivers etc.)
+* Protected server-side methods (starts with underline never will be call
+  from clients-side directly)
 * If `ujson`_ is installed messages will be serialize/deserialize with it.
 
 
@@ -124,38 +138,6 @@ Installation from git:
     cd wsrpc-aiohttp
     python setup.py install
 
-
-Usage example
-+++++++++++++
-
-Let's try to write simple http server with WSRPC handler.
-
-.. literalinclude:: examples/main/server.py
-   :language: python
-
-Next you have two options:
-
-    1. Browser WSRPC client.
-    2. Python WSRPC client.
-
-Browser client
-~~~~~~~~~~~~~~
-
-.. literalinclude:: examples/main/web-client.html
-   :language: html
-
-You can try it on http://localhost:8000/web-client.html (required running server.py).
-
-.. image:: _static/web-client-demo.gif
-
-
-Python client
-~~~~~~~~~~~~~
-
-.. literalinclude:: examples/main/client.py
-   :language: python
-
-This is so useful for testing and shell scripts for your services.
 
 Development
 +++++++++++

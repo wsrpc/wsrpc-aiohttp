@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class WSRPCClient(WSRPCBase):
+    """ WSRPC Client class """
 
     def __init__(self, endpoint: Union[URL, str], loop=None, timeout=None,
                  session: aiohttp.ClientSession=None, **kwargs):
@@ -26,6 +27,8 @@ class WSRPCClient(WSRPCBase):
         self.closed = False
 
     async def close(self):
+        """ Close the client connect connection """
+
         if self.closed:
             return
 
@@ -37,6 +40,8 @@ class WSRPCClient(WSRPCBase):
         await self._session.close()
 
     async def connect(self):
+        """ Perform connection to the server """
+
         self.socket = await self._session.ws_connect(str(self._url))
         self._create_task(self.__handle_connection())
 
@@ -70,4 +75,8 @@ class WSRPCClient(WSRPCBase):
             return future
 
     async def _executor(self, func):
+        """ Method which implements execution of the client functions """
         await asyncio.coroutine(func)()
+
+
+__all__ = 'WSRPCClient',

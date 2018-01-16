@@ -18,6 +18,8 @@ log = logging.getLogger("wsrpc.handler")
 
 
 class WebSocketBase(WSRPCBase, AbstractView):
+    """ Base class for aiohttp websocket handler """
+
     __slots__ = ('_request', 'socket', 'id', '__pending_tasks',
                  '__handlers', 'store', 'serial', '_ping', 'protocol_version')
 
@@ -36,8 +38,16 @@ class WebSocketBase(WSRPCBase, AbstractView):
         self.semaphore = asyncio.Semaphore(self._MAX_CONCURRENT_REQUESTS, loop=self._loop)
 
     @classmethod
-    def configure(cls, keepalive_timeout=_KEEPALIVE_PING_TIMEOUT, client_timeout=_CLIENT_TIMEOUT,
+    def configure(cls, keepalive_timeout=_KEEPALIVE_PING_TIMEOUT,
+                  client_timeout=_CLIENT_TIMEOUT,
                   max_concurrent_requests=_MAX_CONCURRENT_REQUESTS):
+        """ Configures the handler class
+
+        :param keepalive_timeout: sets timeout of client pong response
+        :param client_timeout: internal lock timeout
+        :param max_concurrent_requests: how many concurrent requests might
+                                        be performed by each client
+        """
 
         cls._KEEPALIVE_PING_TIMEOUT = keepalive_timeout
         cls._CLIENT_TIMEOUT = client_timeout
@@ -51,6 +61,20 @@ class WebSocketBase(WSRPCBase, AbstractView):
         return (yield from self.__iter__())
 
     async def authorize(self) -> bool:
+        """ Special method for authorize client.
+        If this method return True then access allowed,
+        otherwise ``403 Forbidden`` will be sent.
+
+        This method will be called before socket connection establishment.
+
+        By default everyone has access. You have to inherit this class
+        and change this behaviour.
+
+        .. note::
+            You can validate some headers (self.request.headers) or
+            check cookies (self.reauest.cookies).
+        """
+
         return True
 
     async def __handle_request(self):
@@ -80,6 +104,12 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
     @classmethod
     def broadcast(cls, func, callback=WebSocketRoute.placebo, **kwargs):
+        """ Call remote function on all connected clients
+
+        :param func: Remote route name
+        :param callback: Function which receive responses
+        """
+
         loop = asyncio.get_event_loop()
 
         for client_id, client in cls.get_clients().items():
@@ -182,6 +212,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
             future.set_exception(ClientException(error))
 
     async def close(self):
+        """ Cancel all pending tasks and stop this socket connection """
         await self.socket.close()
         await super().close()
 
@@ -238,10 +269,17 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
 
 class WebSocketAsync(WebSocketBase):
+    """ Handler class which execute any route as a coroutine """
     async def _executor(self, func):
         return await asyncio.coroutine(func)()
 
 
 class WebSocketThreaded(WebSocketBase):
+    """ Handler class which execute any route in the default thread-pool
+    of current event loop """
+
     async def _executor(self, func):
         return self._loop.run_in_executor(None, func)
+
+
+__all__ = ('WebSocketAsync', 'WebSocketThreaded', 'WebSocketBase')

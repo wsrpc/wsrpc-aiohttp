@@ -4,7 +4,9 @@ from importlib.machinery import SourceFileLoader
 from setuptools import setup, find_packages
 
 
-module = SourceFileLoader("version", os.path.join("wsrpc_aiohttp", "version.py")).load_module()
+module = SourceFileLoader(
+    "version", os.path.join("wsrpc_aiohttp", "version.py")
+).load_module()
 
 
 setup(
@@ -43,18 +45,21 @@ setup(
         'aiohttp<3',
         'yarl',
     ],
+    python_requires=">3.5.*, <4",
     extras_require={
         'testing': [
             'asynctest',
         ],
         'develop': [
+            'asynctest',
             'coverage!=4.3',
+            'coveralls',
             'pylama',
             'pytest',
             'pytest-cov',
-            'tox>=2.4',
-            'coveralls',
             'Sphinx',
+            'sphinxcontrib-plantuml',
+            'tox>=2.4',
         ],
     }
 )

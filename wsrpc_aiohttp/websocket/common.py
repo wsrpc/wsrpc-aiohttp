@@ -5,7 +5,7 @@ from functools import partial
 
 import asyncio
 import logging
-from typing import Union, Callable
+from typing import Union, Callable, List, Any, Dict
 
 import aiohttp
 
@@ -26,6 +26,7 @@ def ping(obj, **kwargs):
 
 
 log = logging.getLogger(__name__)
+RouteType = Union[Callable[['WSRPCBase', Any], Any], WebSocketRoute]
 
 
 class _ProxyMethod:
@@ -53,13 +54,15 @@ class _Proxy:
 
 
 class WSRPCBase:
+    """ Common WSRPC abstraction """
+
     _ROUTES = defaultdict(lambda: {'ping': ping})
     _CLIENTS = defaultdict(dict)
     _CLEAN_LOCK_TIMEOUT = 2
 
     __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks', '_futures', '_serial', '_timeout')
 
-    def __init__(self, loop=None):
+    def __init__(self, loop: asyncio.AbstractEventLoop=None):
         self._loop = loop or asyncio.get_event_loop()
         self._handlers = {}
         self._pending_tasks = set()
@@ -82,6 +85,7 @@ class WSRPCBase:
         self._pending_tasks.add(self._loop.call_later(timer, handler))
 
     async def close(self):
+        """ Cancel all pending tasks """
         async def task_waiter(task):
             if not (hasattr(task, '__iter__') or hasattr(task, '__aiter__')):
                 return
@@ -115,19 +119,21 @@ class WSRPCBase:
             log.warning("Unhandled message %r %r", msg.type, msg.data)
 
     @classmethod
-    def get_routes(cls):
+    def get_routes(cls) -> Dict[str, RouteType]:
         return cls._ROUTES[cls]
 
     @classmethod
-    def get_clients(cls):
+    def get_clients(cls) -> Dict[str, 'WSRPCBase']:
         return cls._CLIENTS[cls]
 
     @property
-    def routes(self) -> dict:
+    def routes(self) -> Dict[str, RouteType]:
+        """ Property which contains the socket routes """
         return self.get_routes()
 
     @property
-    def clients(self) -> dict:
+    def clients(self) -> Dict[str, 'WSRPCBase']:
+        """ Property which contains the socket clients """
         return self.get_clients()
 
     @staticmethod
@@ -241,7 +247,31 @@ class WSRPCBase:
         self._serial += 2
         return self._serial
 
-    def call(self, func, **kwargs):
+    def call(self, func: str, **kwargs):
+        """ Method for call remote function
+
+        Remote methods allows only kwargs as arguments.
+
+        You might use functions as route or classes
+
+        .. code-block:: python
+
+            async def remote_function(socket: WSRPCBase, *, foo, bar):
+                # call function from the client-side
+                await self.socket.proxy.ping()
+                return foo + bar
+
+            class RemoteClass(WebSocketRoute):
+
+                # this method executes when remote side call route name
+                asyc def init(self):
+                    # call function from the client-side
+                    await self.socket.proxy.ping()
+
+                async def make_something(self, foo, bar):
+                    return foo + bar
+
+        """
         serial = self._get_serial()
 
         future = self._futures[serial]
@@ -263,11 +293,33 @@ class WSRPCBase:
 
     @classmethod
     def add_route(cls, route: str, handler: Union[WebSocketRoute, Callable]):
+        """ Expose local function through RPC
+
+        :param route: Name which function will be aliased for this function.
+                      Remote side should call function by this name.
+        :param handler: Function or Route class (classes based on
+                        :class:`wsrpc_aiohttp.WebSocketRoute`).
+                        For route classes the public methods will
+                        be registered automatically.
+
+        .. note::
+
+            Route classes might be initialized only once for the each
+            socket instance.
+
+            In case the method of class will be called first,
+            :func:`wsrpc_aiohttp.WebSocketRoute.init` will be called
+            without params before callable method.
+
+        """
         assert callable(handler) or isinstance(handler, WebSocketRoute)
         cls.get_routes()[route] = handler
 
     @classmethod
     def remove_route(cls, route: str, fail=True):
+        """ Removes route by name. If `fail=True` an exception
+        will be raised in case the route was not found. """
+
         if fail:
             cls.get_routes().pop(route)
         else:
@@ -285,4 +337,15 @@ class WSRPCBase:
 
     @property
     def proxy(self):
+        """ Special property which allow run the remote functions
+        by `dot` notation
+
+        .. code-block:: python
+
+            # calls remote function with name ping
+            await client.proxy.ping()
+
+            # full equivalent of
+            await client.call('ping')
+        """
         return _Proxy(self.call)
