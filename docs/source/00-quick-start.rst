@@ -1,5 +1,5 @@
-Minimal application
-===================
+Quick start
+===========
 
 Let's try to write simple http server with WSRPC handler.
 
@@ -29,3 +29,11 @@ Python client
    :language: python
 
 This is so useful for testing and shell scripts for your services.
+
+
+How it works
+++++++++++++
+
+The following sequence diagram probably to explain some high level of the data-flow.
+
+.. uml:: explanation.puml

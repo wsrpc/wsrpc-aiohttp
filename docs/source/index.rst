@@ -59,63 +59,6 @@ Features
 * If `ujson`_ is installed messages will be serialize/deserialize with it.
 
 
-How it works
-++++++++++++
-
-The following sequence diagram probably to explain some high level of the data-flow.
-
-.. uml::
-
-    @startuml
-
-    title How it works - Sequence Diagram
-
-
-    participant Browser as browser
-    participant "Javascript\nlibrary" as jslib
-    participant WebSocket as ws
-    participant "Python\nBackend" as backend
-
-    browser -> jslib: Browser makes\nfuncion call
-    jslib -> ws: Sending json
-
-    note right of ws
-        {
-            "serial": 1,
-            "call": "jokes.get",
-            "arguments": {
-                "count": 1,
-                "rate": 10
-            },
-            "type": "call"
-        }
-    end note
-
-    ws -> backend: Parsing json
-    backend -->> backend: Call python function
-
-    backend -> ws: Sending json
-
-    note left of backend
-        {
-            "serial": 1,
-            "data": [
-                [
-                    "Q: Why do programmers always mix up Halloween and Christmas?",
-                    "A: Because Oct 31 == Dec 25!"
-                ]
-            ],
-            "type": "callback"
-        }
-    end note
-
-    ws -> jslib: Sending through Websocket
-    jslib -> browser: Call JS function on client-side
-
-
-    @enduml
-
-
 Installation
 ++++++++++++
 

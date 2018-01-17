@@ -1,0 +1,22 @@
+@startuml
+
+title Client and Server communication
+
+
+participant Client as client
+participant Server as server
+
+client --> server: Initializing connection
+server --> client: 101 Switching Protocols
+
+...
+
+client -> server: [Request #0] <b>await client.proxy.multiply_loopback()</b>
+server --> server: <b>multiply_loopback()</b>
+server -> client: [Request #1] <b>await socket.proxy.multiply(x=10, y=20)</b>
+client --> client: <b>multiply(socket, x=10, y=20)</b>
+client -> server: [Response #1] <b>return 200</b>
+server -> client: [Response #0] <b>return None</b>
+...
+
+@enduml
