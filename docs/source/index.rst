@@ -46,14 +46,15 @@ Features
 * Two-way RPC
     * Initiating call client function from server side.
     * Calling the server method from the client.
-    * Asynchronous connection protocol. Server or client can call
-      multiple methods with unpredictable ordering of answers.
-* Transferring any exceptions from a client side to
+    * Asynchronous connection protocol. Server or client can calls multiple
+      methods with unpredictable ordering of answers.
+* Transparent transferring any exceptions from a client side to
   the server side and vise versa.
-* The frontend-library are well done for usage without any modification.
-* Fully asynchronous server-side functions.
-* Thread-based websocket handler for writing synchronous code
-  (for synchronous database drivers etc.)
+* The JS frontend-library are well done for usage without any modification.
+* Multiple executors:
+    * Fully asynchronous server-side functions.
+    * Thread-based websocket handler for writing synchronous code
+      (for synchronous database drivers etc.)
 * Protected server-side methods (starts with underline never will be call
   from clients-side directly)
 * If `ujson`_ is installed messages will be serialize/deserialize with it.
