@@ -5,7 +5,7 @@ from functools import partial
 
 import asyncio
 import logging
-from typing import Union, Callable, List, Any, Dict
+from typing import Union, Callable, Any, Dict
 
 import aiohttp
 
