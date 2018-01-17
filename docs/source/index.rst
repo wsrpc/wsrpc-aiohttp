@@ -10,8 +10,8 @@ Welcome to wsrpc-aiohttp's documentation!
     :target: https://coveralls.io/github/wsrpc/wsrpc-aiohttp
     :alt: Coveralls
 
-.. image:: https://travis-ci.org/mosquito/wsrpc-aiohttp.svg
-    :target: https://travis-ci.org/mosquito/wsrpc-aiohttp
+.. image:: https://travis-ci.org/wsrpc/wsrpc-aiohttp.svg
+    :target: https://travis-ci.org/wsrpc/wsrpc-aiohttp
     :alt: Travis CI
 
 .. image:: https://img.shields.io/pypi/v/wsrpc-aiohttp.svg
