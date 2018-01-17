@@ -91,10 +91,10 @@ Python client code:
     client = WSRPCClient("ws://127.0.0.1:8000/ws/", loop=loop)
     await client.connect()
 
-    assert await client.proxy.kw.set(key='foo', value='bar')
+    assert await client.proxy.kv.set(key='foo', value='bar')
     # The `init` will be called on the server side before `set`
 
-    assert await client.proxy.kw.get(key='foo')
+    assert await client.proxy.kv.get(key='foo')
 
 Javascript client code:
 
