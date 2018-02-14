@@ -42,7 +42,7 @@ setup(
         ],
     },
     install_requires=[
-        'aiohttp<3',
+        'aiohttp<4',
         'yarl',
     ],
     python_requires=">3.5.*, <4",
