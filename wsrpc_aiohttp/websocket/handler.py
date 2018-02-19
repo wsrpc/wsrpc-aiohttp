@@ -279,7 +279,7 @@ class WebSocketThreaded(WebSocketBase):
     of current event loop """
 
     async def _executor(self, func):
-        return self._loop.run_in_executor(None, func)
+        return await self._loop.run_in_executor(None, func)
 
 
 __all__ = ('WebSocketAsync', 'WebSocketThreaded', 'WebSocketBase')
