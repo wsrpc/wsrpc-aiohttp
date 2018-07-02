@@ -11,7 +11,7 @@ from aiohttp.abc import AbstractView
 
 from .common import WSRPCBase, ClientException
 from .route import WebSocketRoute
-from .tools import Lazy, json, serializer
+from .tools import Lazy, dumps, loads
 
 global_log = logging.getLogger("wsrpc")
 log = logging.getLogger("wsrpc.handler")
@@ -35,7 +35,9 @@ class WebSocketBase(WSRPCBase, AbstractView):
         self.id = uuid.uuid4()
         self.protocol_version = None
         self.serial = 0
-        self.semaphore = asyncio.Semaphore(self._MAX_CONCURRENT_REQUESTS, loop=self._loop)
+        self.semaphore = asyncio.Semaphore(
+            self._MAX_CONCURRENT_REQUESTS, loop=self._loop
+        )
 
     @classmethod
     def configure(cls, keepalive_timeout=_KEEPALIVE_PING_TIMEOUT,
@@ -93,7 +95,8 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 try:
                     await self._handle_message(msg)
                 except WebSocketError:
-                    log.error('Client connection %s closed with exception %s', self.id, self.socket.exception())
+                    log.error('Client connection %s closed with exception %s',
+                              self.id, self.socket.exception())
                     break
             else:
                 log.info('Client connection %s closed', self.id)
@@ -122,7 +125,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
             start = self._loop.time()
 
             # deserialize message
-            data = message.json(loads=json.loads)
+            data = message.json(loads=loads)
             serial = data.get('serial', -1)
             msg_type = data.get('type', 'call')
 
@@ -134,22 +137,34 @@ class WebSocketBase(WSRPCBase, AbstractView):
             async with self._locks[serial]:
                 try:
                     if msg_type == 'call':
-                        args, kwargs = self._prepare_args(data.get('arguments', None))
+                        args, kwargs = self._prepare_args(
+                            data.get('arguments', None)
+                        )
+
                         callback = data.get('call', None)
 
                         message_repr = "call[%s]" % callback
 
                         if callback is None:
-                            raise ValueError('Require argument "call" does\'t exist.')
+                            raise ValueError(
+                                'Require argument "call" does\'t exist.'
+                            )
 
                         callee = self.resolver(callback)
-                        callee_is_route = hasattr(callee, '__self__') and isinstance(callee.__self__, WebSocketRoute)
+                        callee_is_route = (
+                            hasattr(callee, '__self__') and
+                            isinstance(callee.__self__, WebSocketRoute)
+                        )
+
                         if not callee_is_route:
                             a = [self]
                             a.extend(args)
                             args = a
 
-                        result = await self._executor(partial(callee, *args, **kwargs))
+                        result = await self._executor(
+                            partial(callee, *args, **kwargs)
+                        )
+
                         self._send(data=result, serial=serial, type='callback')
 
                     elif msg_type == 'callback':
@@ -160,18 +175,28 @@ class WebSocketBase(WSRPCBase, AbstractView):
                         message_repr = "callback[%r]" % payload
 
                     elif msg_type == 'error':
-                        self._reject(data.get('serial', -1), data.get('data', None))
-                        log.error('Client return error: \n\t{0}'.format(data.get('data', None)))
+                        self._reject(
+                            data.get('serial', -1), data.get('data', None)
+                        )
+
+                        log.error(
+                            'Client return error: \n\t{0}'.format(
+                                data.get('data', None)
+                            )
+                        )
 
                         message_repr = "error[%r]" % data
 
                 except Exception as e:
                     log.exception(e)
-                    self._send(data=self._format_error(e), serial=serial, type='error')
+                    self._send(data=self._format_error(e),
+                               serial=serial, type='error')
 
                 finally:
                     def clean_lock():
-                        log.debug("Release and delete lock for %s serial %s", self, serial)
+                        log.debug("Release and delete lock for %s serial %s",
+                                  self, serial)
+
                         if serial in self._locks:
                             self._locks.pop(serial)
 
@@ -185,7 +210,8 @@ class WebSocketBase(WSRPCBase, AbstractView):
                         # loop.time() resolution is 1 ms.
                         response_time = "less then 1ms"
 
-                    log.info("Response for client \"%s\" #%d finished %s", message_repr, serial, response_time)
+                    log.info("Response for client \"%s\" #%d finished %s",
+                             message_repr, serial, response_time)
 
     def _send(self, **kwargs):
         try:
@@ -197,7 +223,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
               )
             self._loop.create_task(self.socket.send_json(
                 kwargs,
-                dumps=lambda x: json.dumps(serializer(x))
+                dumps=lambda x: dumps(x)
             ))
         except aiohttp.WebSocketError:
             self._create_task(self.close())
@@ -223,7 +249,9 @@ class WebSocketBase(WSRPCBase, AbstractView):
             self._loop.create_task(asyncio.coroutine(obj._onclose)())
 
     def _log_client_list(self):
-        log.debug('CLIENTS: %s', Lazy(lambda: ''.join(['\n\t%r' % i for i in self.clients.values()])))
+        log.debug('CLIENTS: %s', Lazy(lambda: ''.join([
+            '\n\t%r' % i for i in self.clients.values()
+        ])))
 
     async def _start_ping(self):
         while True:
@@ -237,7 +265,10 @@ class WebSocketBase(WSRPCBase, AbstractView):
                     return
                 future.set_exception(TimeoutError)
 
-            handle = self._loop.call_later(self._KEEPALIVE_PING_TIMEOUT, on_timeout)
+            handle = self._loop.call_later(
+                self._KEEPALIVE_PING_TIMEOUT, on_timeout
+            )
+
             future.add_done_callback(lambda f: handle.cancel())
 
             try:
@@ -252,7 +283,9 @@ class WebSocketBase(WSRPCBase, AbstractView):
             except asyncio.CancelledError:
                 break
             except (TimeoutError, asyncio.TimeoutError):
-                log.info('Client "%r" connection should be closed because ping timeout', self)
+                log.info('Client "%r" connection should be '
+                        'closed because ping timeout', self)
+
                 self._loop.create_task(self.close())
                 break
             except Exception:

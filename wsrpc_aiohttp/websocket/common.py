@@ -9,7 +9,7 @@ from typing import Union, Callable, Any, Dict
 
 import aiohttp
 
-from .tools import json
+from .tools import loads
 from .route import WebSocketRoute
 
 
@@ -155,7 +155,7 @@ class WSRPCBase:
 
     async def on_message(self, message: aiohttp.WSMessage):
         # deserialize message
-        data = message.json(loads=json.loads)
+        data = message.json(loads=loads)
         serial = data.get('serial', -1)
         msg_type = data.get('type', 'call')
 

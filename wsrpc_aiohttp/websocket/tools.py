@@ -1,12 +1,17 @@
+import base64
 from functools import singledispatch
 
+from json import dumps as _dumps
+
 try:
-    import ujson as json
+    from ujson import loads
 except ImportError:
-    import json
+    from json import loads
 
 
-class Lazy(object):
+class Lazy:
+    __slots__ = 'func',
+
     def __init__(self, func):
         self.func = func
 
@@ -34,33 +39,13 @@ def serializer(value):
     raise ValueError("Can't serialize %r" % type(value))
 
 
-@serializer.register(tuple)     # noqa: W0404
-@serializer.register(list)
-def _(value):
-    return [serializer(i) for i in value]
-
-
-@serializer.register(dict)      # noqa: W0404
-def _(value):
-    result = dict()
-    for key, value in value.items():
-        result[serializer(key)] = serializer(value)
-
-    return result
-
-
-@serializer.register(int)       # noqa: W0404
-@serializer.register(float)
-@serializer.register(str)
-@serializer.register(type(None))
-@serializer.register(bool)
-def _(value):
-    return value
-
-
 @serializer.register(bytes)     # noqa: W0404
 def _(value):
-    return value.decode()
+    return base64.b64encode(value).decode()
 
 
-__all__ = ('json', 'Lazy')
+def dumps(obj):
+    return _dumps(obj, default=serializer)
+
+
+__all__ = ('dumps', 'loads', 'Lazy')

@@ -6,7 +6,7 @@ import logging
 import asyncio
 from yarl import URL
 
-from .tools import Lazy, json, serializer
+from .tools import Lazy, dumps
 from .common import WSRPCBase
 
 
@@ -21,7 +21,10 @@ class WSRPCClient(WSRPCBase):
 
         WSRPCBase.__init__(self, loop=loop)
         self._url = URL(str(endpoint))
-        self._session = session or aiohttp.ClientSession(loop=self._loop, **kwargs)
+        self._session = session or aiohttp.ClientSession(
+            loop=self._loop, **kwargs
+        )
+
         self._timeout = timeout
         self.socket = None
         self.closed = False
@@ -66,7 +69,7 @@ class WSRPCClient(WSRPCBase):
             if self.socket.closed:
                 raise aiohttp.ClientConnectionError('Connection was closed.')
 
-            send_coro = self.socket.send_json(kwargs, dumps=lambda x: json.dumps(serializer(x)))
+            send_coro = self.socket.send_json(kwargs, dumps=lambda x: dumps(x))
             return self._loop.create_task(send_coro)
         except aiohttp.WebSocketError as ex:
             self._loop.create_task(self.close())
