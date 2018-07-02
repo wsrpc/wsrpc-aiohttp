@@ -60,7 +60,8 @@ class WSRPCBase:
     _CLIENTS = defaultdict(dict)
     _CLEAN_LOCK_TIMEOUT = 2
 
-    __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks', '_futures', '_serial', '_timeout')
+    __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks',
+                 '_futures', '_serial', '_timeout')
 
     def __init__(self, loop: asyncio.AbstractEventLoop=None):
         self._loop = loop or asyncio.get_event_loop()
@@ -95,7 +96,9 @@ class WSRPCBase:
             except asyncio.CancelledError:
                 pass
             except Exception:
-                log.exception("Unhandled exception when closing client connection")
+                log.exception(
+                    "Unhandled exception when closing client connection"
+                )
 
         for task in tuple(self._pending_tasks):
             task.cancel()
@@ -165,20 +168,32 @@ class WSRPCBase:
         async with self._locks[serial]:
             try:
                 if msg_type == 'call':
-                    args, kwargs = self._prepare_args(data.get('arguments', None))
+                    args, kwargs = self._prepare_args(
+                        data.get('arguments', None)
+                    )
+
                     callback = data.get('call', None)
 
                     if callback is None:
-                        raise ValueError('Require argument "call" does\'t exist.')
+                        raise ValueError(
+                            'Require argument "call" does\'t exist.'
+                        )
 
                     callee = self.resolver(callback)
-                    calee_is_route = hasattr(callee, '__self__') and isinstance(callee.__self__, WebSocketRoute)
+                    calee_is_route = (
+                        hasattr(callee, '__self__') and
+                        isinstance(callee.__self__, WebSocketRoute)
+                    )
+
                     if not calee_is_route:
                         a = [self]
                         a.extend(args)
                         args = a
 
-                    result = await self._executor(partial(callee, *args, **kwargs))
+                    result = await self._executor(
+                        partial(callee, *args, **kwargs)
+                    )
+
                     self._send(data=result, serial=serial, type='callback')
 
                 elif msg_type == 'callback':
@@ -187,15 +202,21 @@ class WSRPCBase:
 
                 elif msg_type == 'error':
                     self._reject(data.get('serial', -1), data.get('data', None))
-                    log.error('Client return error: \n\t{0}'.format(data.get('data', None)))
+                    log.error('Client return error: \n\t%r',
+                              data.get('data', None))
 
             except Exception as e:
                 log.exception(e)
-                self._send(data=self._format_error(e), serial=serial, type='error')
+                self._send(data=self._format_error(e), serial=serial,
+                           type='error')
 
             finally:
                 def clean_lock():
-                    log.debug("Release and delete lock for %s serial %s", self, serial)
+                    log.debug(
+                        "Release and delete lock for %s serial %s",
+                        self, serial
+                    )
+
                     if serial in self._locks:
                         self._locks.pop(serial)
 
@@ -218,16 +239,22 @@ class WSRPCBase:
         future.set_exception(ClientException(error))
 
     def _unresolvable(self, func_name, *args, **kwargs):
-        raise NotImplementedError('Callback function "%r" not implemented' % func_name)
+        raise NotImplementedError(
+            'Callback function "%r" not implemented' % func_name
+        )
 
     def resolver(self, func_name):
-        class_name, method = func_name.split('.') if '.' in func_name else (func_name, 'init')
+        class_name, method = (
+            func_name.split('.') if '.' in func_name else (func_name, 'init')
+        )
+
         callee = self.routes.get(class_name, self._unresolvable)
 
         condition = (
             callee == self._unresolvable or
             isinstance(getattr(callee, '__self__', None), WebSocketRoute) or (
-                not isinstance(callee, (types.FunctionType, types.MethodType)) and issubclass(callee, WebSocketRoute)
+                not isinstance(callee, (types.FunctionType, types.MethodType))
+                and issubclass(callee, WebSocketRoute)
             )
         )
 
@@ -241,7 +268,9 @@ class WSRPCBase:
         if hasattr(callee, '__call__'):
             return callee
         else:
-            raise NotImplementedError('Method call of {0} is not implemented'.format(repr(callee)))
+            raise NotImplementedError(
+                'Method call of {0} is not implemented'.format(repr(callee))
+            )
 
     def _get_serial(self):
         self._serial += 2
@@ -278,11 +307,17 @@ class WSRPCBase:
 
         req_type = 'call'
 
-        send_future = self._send(serial=serial, type=req_type, call=func, arguments=kwargs)
+        send_future = self._send(
+            serial=serial, type=req_type, call=func, arguments=kwargs
+        )
 
-        log.info("Sending %r request #%d \"%s(%r)\" to the client.", req_type, serial, func, kwargs)
+        log.info("Sending %r request #%d \"%s(%r)\" to the client.",
+                 req_type, serial, func, kwargs)
 
-        future = asyncio.ensure_future(asyncio.wait_for(future, self._timeout, loop=self._loop), loop=self._loop)
+        future = asyncio.ensure_future(asyncio.wait_for(
+            future, self._timeout,
+            loop=self._loop), loop=self._loop
+        )
 
         def propagate_exception(f):
             if f.exception():

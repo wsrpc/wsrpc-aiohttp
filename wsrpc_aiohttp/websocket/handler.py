@@ -284,7 +284,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 break
             except (TimeoutError, asyncio.TimeoutError):
                 log.info('Client "%r" connection should be '
-                        'closed because ping timeout', self)
+                         'closed because ping timeout', self)
 
                 self._loop.create_task(self.close())
                 break

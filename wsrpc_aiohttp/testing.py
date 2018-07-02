@@ -36,7 +36,8 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
     :type seconds: int
     :raises: TimeoutError if time limit is reached
 
-    .. note:: Default timeout might be set as ``ASYNC_TIMEOUT`` environment variable.
+    .. note::
+        Default timeout might be set as ``ASYNC_TIMEOUT`` environment variable.
 
     """
     if func is None:
@@ -47,7 +48,9 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
 
     @wraps(func)
     async def wrap(self: TestCase, *args, **kwargs):
-        task = self.loop.create_task(coro_func(self, *args, **kwargs))  # type: asyncio.Task
+        task = self.loop.create_task(
+            coro_func(self, *args, **kwargs)
+        )  # type: asyncio.Task
 
         cancelled = False
 
