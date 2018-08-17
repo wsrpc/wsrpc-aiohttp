@@ -1,4 +1,4 @@
 # ONLY FOR ReadTheDocs
 .[develop]
 autodoc==0.3
-sphinxcontrib-plantuml
+sphinxcontrib-plantuml==0.12
