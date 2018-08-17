@@ -53,4 +53,7 @@ class WebSocketRoute(object):
 
     @classmethod
     def placebo(*args, **kwargs):
-        log.debug("PLACEBO IS CALLED!!! args: {0}, kwargs: {1}".format(repr(args), repr(kwargs)))
+        log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
+
+
+__all__ = 'WebSocketRoute', 'decorators',

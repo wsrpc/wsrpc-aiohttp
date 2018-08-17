@@ -1,37 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-    <script type="text/javascript" src="/js/wsrpc.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <script type="text/javascript" src="/js/wsrpc.min.js"></script>
 
-    <script type="text/javascript">
-		var url = (window.location.protocol === "https:" ? "wss://" : "ws://") +
-                    window.location.host + '/ws/';
-		RPC = WSRPC(url, 5000);
-		RPC.connect();
-    </script>
-    <style>
-        body {font-family: "Arial", serif; margin: 10px; background-color: #eee;}
-        input {width: 300px;}
-        input, button { display: inline-block; border: 1px solid black;}
-    </style>
+  <script type="text/javascript">
+    var url = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + '/ws/';
+    RPC = WSRPC(url, 5000);
+    RPC.connect();
+  </script>
+  <style>
+  body {font-family: "Arial", serif; margin: 10px; background-color: #eee;}
+  input {width: 300px;}
+  input, button { display: inline-block; border: 1px solid black;}
+</style>
 </head>
 <body>
-    <input disabled id="text-field"/>
-    <button id="btn">Get UUID</button>
-    <script>
-        var textField = document.getElementById('text-field');
-        var btn = document.getElementById('btn');
+  <input disabled id="text-field"/>
+  <button id="btn">Get UUID</button>
+  <script>
+    var textField = document.getElementById('text-field');
+    var btn = document.getElementById('btn');
 
-        btn.onclick = function () {
-            RPC.call('uuid4').then(function (result) {
-                textField.value = result;
-            }, function (error) {
-                alert("Error when call 'uuid4' from remote side: " + error);
-            });
-        }
-    </script>
+    btn.onclick = function () {
+      RPC.call('uuid4').then(function (result) {
+        textField.value = result;
+      }, function (error) {
+        alert("Error when call 'uuid4' from remote side: " + error);
+      });
+    }
+  </script>
 </body>
 </html>
 

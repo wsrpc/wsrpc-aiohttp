@@ -1,0 +1,34 @@
+@startuml
+
+title Client and Server communication
+
+
+participant Client as client
+participant Server as server
+
+client -> server: Initializing connection
+server -> server: authorize client
+
+alt client was not authenticated
+    server -> client: 403 Forbidden
+    server ->x client: connection closed
+else client authenticated
+    server -> client: 101 Switching Protocols
+
+    ...
+
+    client -> server: RPC request 1
+    ...
+    client -> server: RPC request 2
+    server -> client: RPC response 2
+    ...
+    client -> server: RPC request 3
+    server -> client: RPC response 3
+    ...
+    server -> client: RPC response 1
+
+    client -> server: Close connection
+    server ->x client: connection closed
+end
+
+@enduml

@@ -21,7 +21,7 @@ WSRPC aiohttp
 Remote Procedure call through WebSocket between browser and tornado.
 
 Features
-++++++++
+--------
 
 * Initiating call client function from server side.
 * Calling the server method from the client.
@@ -106,7 +106,7 @@ Add the frontend side
     <script type="text/javascript" src="/js/q.min.js"></script>
     <script type="text/javascript" src="/js/wsrpc.min.js"></script>
     <script>
-        var url = window.location.protocol==="https:"?"wss://":"ws://" + window.location.host + '/ws/';
+        var url = ((window.location.protocol==="https):"?"wss://":"ws://") + window.location.host + '/ws/';
         RPC = WSRPC(url, 5000);
         RPC.addRoute('test', function (data) { return "Test called"; });
         RPC.connect();
@@ -157,3 +157,4 @@ Example running there demo_.
 
 
 .. _demo: https://demo.wsrpc.info/
+.. _ujson: https://pypi.python.org/pypi/ujson

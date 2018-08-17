@@ -4,7 +4,7 @@ from functools import partial, wraps
 
 import aiohttp.web
 from asynctest import TestCase
-from aiohttp.test_utils import TestClient
+from aiohttp.test_utils import TestClient, TestServer
 from yarl import URL
 
 from .websocket.handler import WebSocketAsync
@@ -36,7 +36,8 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
     :type seconds: int
     :raises: TimeoutError if time limit is reached
 
-    .. note:: Default timeout might be set as ``ASYNC_TIMEOUT`` environment variable.
+    .. note::
+        Default timeout might be set as ``ASYNC_TIMEOUT`` environment variable.
 
     """
     if func is None:
@@ -47,7 +48,9 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
 
     @wraps(func)
     async def wrap(self: TestCase, *args, **kwargs):
-        task = self.loop.create_task(coro_func(self, *args, **kwargs))  # type: asyncio.Task
+        task = self.loop.create_task(
+            coro_func(self, *args, **kwargs)
+        )  # type: asyncio.Task
 
         cancelled = False
 
@@ -80,10 +83,10 @@ class BaseTestCase(TestCase):
         app = aiohttp.web.Application()
         self.path = '/ws/'
         app.router.add_route('*', self.path, self.WebSocketHandler)
-        return app
+        return TestServer(app)
 
-    async def get_ws_client(self) -> WSRPCClient:
-        ws_client = WSRPCClient(endpoint=self.url)
+    async def get_ws_client(self, timeout=None) -> WSRPCClient:
+        ws_client = WSRPCClient(endpoint=self.url, timeout=timeout)
         await ws_client.connect()
         self.addCleanup(ws_client.close)
         return ws_client

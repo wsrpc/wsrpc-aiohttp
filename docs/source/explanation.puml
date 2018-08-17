@@ -1,0 +1,40 @@
+@startuml
+
+title How it's works
+
+
+participant Browser as browser
+participant "Javascript\nlibrary" as jslib
+participant WebSocket as ws
+participant "Python\nBackend" as backend
+
+browser -> jslib: Browser makes\nfuncion call\n(creating promise)
+jslib -> ws: Sending json
+
+note right of ws
+    {
+        "serial": 1,
+        "call": "uuid4",
+        "arguments": {},
+        "type": "call"
+    }
+end note
+
+ws -> backend: Parsing json
+backend -->> backend: Call python function
+
+backend -> ws: Sending json
+
+note left of backend
+    {
+        "serial": 1,
+        "data": "8927d899-497a-4851-98d4-0a3a0e07fdd5",
+        "type": "callback"
+    }
+end note
+
+ws -> jslib: Sending through Websocket
+jslib -> browser: Call JS function on client-side\n(resolving promise)
+
+
+@enduml
