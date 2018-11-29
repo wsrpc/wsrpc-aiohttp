@@ -272,8 +272,20 @@
 			addRoute: function (route, callback) {
 				self.routes[route] = callback;
 			},
-			addEventListener: function (event, func) {
-				return self.eventStore[event][self.eventId++] = func;
+			addEventListener: function (event, func, returnId) {
+				if (returnId === undefined) {
+					returnId = false;
+				}
+
+				var eventId = self.eventId++;
+
+				self.eventStore[event][eventId] = func;
+
+				if (returnId) {
+					return eventId;
+				} else {
+					return func;
+				}
 			},
 			onEvent: function (event) {
 				var deferred = Q.defer();
@@ -281,8 +293,8 @@
 				return deferred.promise;
 			},
 			removeEventListener: function (event, index) {
-				if (index < self.eventStore[event].length) {
-					self.eventStore[event].splice(index, 1);
+				if (self.eventStore[event].hasOwnProperty(index)) {
+					delete self.eventStore[event][index];
 					return true;
 				} else {
 					return false;
