@@ -3,15 +3,14 @@ import asyncio
 import logging
 import uuid
 from collections import defaultdict
-from functools import partial
 
 import aiohttp
-from aiohttp import web, WSMessage, WebSocketError
+from aiohttp import web, WebSocketError
 from aiohttp.abc import AbstractView
 
 from .common import WSRPCBase, ClientException
 from .route import WebSocketRoute
-from .tools import Lazy, dumps, loads
+from .tools import Lazy, dumps
 
 global_log = logging.getLogger("wsrpc")
 log = logging.getLogger("wsrpc.handler")

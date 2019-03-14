@@ -50,7 +50,10 @@ class TestRoute(WebSocketRoute):
         joke = choice(self.JOKES)
 
         result = await self.socket.proxy.joke(joke=joke)
-        log.info('Client said that was "{0}"'.format('awesome' if result else 'awful'))
+        log.info(
+            'Client said that was "%s"',
+            ('awesome' if result else 'awful')
+        )
         return 'Cool' if result else 'Hmm.. Try again.'
 
 
