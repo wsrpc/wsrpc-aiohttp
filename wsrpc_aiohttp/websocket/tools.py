@@ -16,7 +16,10 @@ class Lazy:
         self.func = func
 
     def __str__(self):
-        return self.func()
+        return str(self.func())
+
+    def __repr__(self):
+        return repr(self.func())
 
 
 @singledispatch
@@ -36,7 +39,7 @@ def serializer(value):
         def _(value: MyObject) -> dict:
             return {'myObject': {'foo': value.foo}}
     """
-    raise ValueError("Can't serialize %r" % type(value))
+    raise ValueError("Can not serialize %r" % type(value))
 
 
 @serializer.register(bytes)     # noqa: W0404

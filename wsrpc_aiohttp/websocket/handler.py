@@ -29,7 +29,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
     def __init__(self, request):
         AbstractView.__init__(self, request)
-        WSRPCBase.__init__(self, loop=self.request.app.loop)
+        WSRPCBase.__init__(self)
 
         self._ping = defaultdict(self._loop.create_future)
         self.id = uuid.uuid4()
@@ -83,7 +83,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         self.socket = web.WebSocketResponse()
 
         if not await self.authorize():
-            return web.HTTPForbidden()
+            raise web.HTTPForbidden()
 
         await self.socket.prepare(self.request)
 
@@ -118,107 +118,12 @@ class WebSocketBase(WSRPCBase, AbstractView):
         for client_id, client in cls.get_clients().items():
             loop.create_task(client.call, func, callback, **kwargs)
 
-    async def on_message(self, message: WSMessage):
-        async with self.semaphore:
-            log.debug('Client %s send message: "%s"', self.id, message)
-
-            start = self._loop.time()
-
-            # deserialize message
-            data = message.json(loads=loads)
-            serial = data.get('serial', -1)
-            msg_type = data.get('type', 'call')
-
-            message_repr = ''
-
-            assert serial >= 0
-
-            log.debug("Acquiring lock for %s serial %s", self, serial)
-            async with self._locks[serial]:
-                try:
-                    if msg_type == 'call':
-                        args, kwargs = self._prepare_args(
-                            data.get('arguments', None)
-                        )
-
-                        callback = data.get('call', None)
-
-                        message_repr = "call[%s]" % callback
-
-                        if callback is None:
-                            raise ValueError(
-                                'Require argument "call" does\'t exist.'
-                            )
-
-                        callee = self.resolver(callback)
-                        callee_is_route = (
-                            hasattr(callee, '__self__') and
-                            isinstance(callee.__self__, WebSocketRoute)
-                        )
-
-                        if not callee_is_route:
-                            a = [self]
-                            a.extend(args)
-                            args = a
-
-                        result = await self._executor(
-                            partial(callee, *args, **kwargs)
-                        )
-
-                        self._send(data=result, serial=serial, type='callback')
-
-                    elif msg_type == 'callback':
-                        cb = self._futures.pop(serial, None)
-                        payload = data.get('data', None)
-                        cb.set_result(payload)
-
-                        message_repr = "callback[%r]" % payload
-
-                    elif msg_type == 'error':
-                        self._reject(
-                            data.get('serial', -1), data.get('data', None)
-                        )
-
-                        log.error(
-                            'Client return error: \n\t{0}'.format(
-                                data.get('data', None)
-                            )
-                        )
-
-                        message_repr = "error[%r]" % data
-
-                except Exception as e:
-                    log.exception(e)
-                    self._send(data=self._format_error(e),
-                               serial=serial, type='error')
-
-                finally:
-                    def clean_lock():
-                        log.debug("Release and delete lock for %s serial %s",
-                                  self, serial)
-
-                        if serial in self._locks:
-                            self._locks.pop(serial)
-
-                    self._call_later(self._CLIENT_TIMEOUT, clean_lock)
-
-                    response_time = self._loop.time() - start
-
-                    if response_time > 0.001:
-                        response_time = "%.3f" % response_time
-                    else:
-                        # loop.time() resolution is 1 ms.
-                        response_time = "less then 1ms"
-
-                    log.info("Response for client \"%s\" #%d finished %s",
-                             message_repr, serial, response_time)
-
     def _send(self, **kwargs):
         try:
             log.debug(
                 "Sending message to %s serial %s: %s",
                 Lazy(lambda: str(self.id)),
-                Lazy(lambda: str(kwargs.get('serial'))),
+                Lazy(lambda: str(kwargs.get('id'))),
                 Lazy(lambda: str(kwargs))
               )
             self._loop.create_task(self.socket.send_json(

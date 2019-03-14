@@ -159,27 +159,23 @@ class WSRPCBase:
     async def on_message(self, message: aiohttp.WSMessage):
         # deserialize message
         data = message.json(loads=loads)
-        serial = data.get('serial', -1)
-        msg_type = data.get('type', 'call')
+
+        serial = data.get('id', -1)
+        method = data.get('method')
+        result = data.get('result')
+        error = data.get('error')
 
         assert serial >= 0
 
         log.debug("Acquiring lock for %s serial %s", self, serial)
         async with self._locks[serial]:
             try:
-                if msg_type == 'call':
+                if 'method' in data:
                     args, kwargs = self._prepare_args(
-                        data.get('arguments', None)
+                        data.get('params', None)
                     )
 
-                    callback = data.get('call', None)
-
-                    if callback is None:
-                        raise ValueError(
-                            'Require argument "call" does\'t exist.'
-                        )
-
-                    callee = self.resolver(callback)
+                    callee = self.resolver(method)
                     calee_is_route = (
                         hasattr(callee, '__self__') and
                         isinstance(callee.__self__, WebSocketRoute)
@@ -194,21 +190,18 @@ class WSRPCBase:
                         partial(callee, *args, **kwargs)
                     )
 
-                    self._send(data=result, serial=serial, type='callback')
-
-                elif msg_type == 'callback':
+                    self._send(result=result, id=serial)
+                elif 'result' in data:
                     cb = self._futures.pop(serial, None)
-                    cb.set_result(data.get('data', None))
+                    cb.set_result(result)
 
-                elif msg_type == 'error':
-                    self._reject(data.get('serial', -1), data.get('data', None))
-                    log.error('Client return error: \n\t%r',
-                              data.get('data', None))
+                elif 'error' in data:
+                    self._reject(serial, error)
+                    log.error('Client return error: \n\t%r', error)
 
             except Exception as e:
                 log.exception(e)
-                self._send(data=self._format_error(e), serial=serial,
-                           type='error')
+                self._send(error=self._format_error(e), id=serial)
 
             finally:
                 def clean_lock():
@@ -305,14 +298,10 @@ class WSRPCBase:
 
         future = self._futures[serial]
 
-        req_type = 'call'
-
-        send_future = self._send(
-            serial=serial, type=req_type, call=func, arguments=kwargs
-        )
+        send_future = self._send(id=serial, method=func, params=kwargs)
 
         log.info("Sending %r request #%d \"%s(%r)\" to the client.",
-                 req_type, serial, func, kwargs)
+                 serial, func, kwargs)
 
         future = asyncio.ensure_future(asyncio.wait_for(
             future, self._timeout,
