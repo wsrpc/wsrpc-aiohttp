@@ -1,7 +1,7 @@
 (function (global) {
 	function WSRPCConstructor (URL, reconnectTimeout) {
 		var self = this;
-		self.serial = 1;
+		self.id = 1;
 		self.eventId = 0;
 		self.socketStarted = false;
 		self.eventStore = {
@@ -63,7 +63,7 @@
 			setTimeout(function () {
 				try {
 					self.socket = createSocket();
-					self.serial = 1;
+					self.id = 1;
 				} catch (exc) {
 					callEvents('onerror', exc);
 					delete self.socket;
@@ -173,49 +173,49 @@
 					try {
 						data = JSON.parse(message.data);
 						log(data.data);
-						if (data.hasOwnProperty('type') && data.type === 'call') {
-							if (!self.routes.hasOwnProperty(data.call)) {
+						if (data.hasOwnProperty('method')) {
+							if (!self.routes.hasOwnProperty(data.method)) {
 								throw Error('Route not found');
 							}
 
 							var connectionNumber = self.connectionNumber;
-							Q(self.routes[data.call](data.arguments)).then(function(promisedResult) {
+							Q(self.routes[data.method](data.params)).then(function(promisedResult) {
 								if (connectionNumber == self.connectionNumber) {
 									self.socket.send(JSON.stringify({
-										serial: data.serial,
-										type: 'callback',
-										data: promisedResult
+										id: data.id,
+										result: promisedResult,
+										error: null
 									}));
 								}
 							}).done();
-						} else if (data.hasOwnProperty('type') && data.type === 'error') {
-							if (!self.store.hasOwnProperty(data.serial)) {
+						} else if (data.hasOwnProperty('error') && data.error === null) {
+							if (!self.store.hasOwnProperty(data.id)) {
 								return log('Unknown callback');
 							}
-							var deferred = self.store[data.serial];
+							var deferred = self.store[data.id];
 							if (typeof deferred === 'undefined') {
 								return log('Confirmation without handler');
 							}
-							delete self.store[data.serial];
-							log('REJECTING: ' + data.data);
-							deferred.reject(data.data);
+							delete self.store[data.id];
+							log('REJECTING: ' + data.error);
+							deferred.reject(data.error);
 						} else {
-							var deferred = self.store[data.serial];
+							var deferred = self.store[data.id];
 							if (typeof deferred === 'undefined') {
 								return log('Confirmation without handler');
 							}
-							delete self.store[data.serial];
-							if (data.type === 'callback') {
-								return deferred.resolve(data.data);
+							delete self.store[data.id];
+							if (data.result) {
+								return deferred.resolve(data.result);
 							} else {
-								return deferred.reject(data.data);
+								return deferred.reject(data.error);
 							}
 						}
 					} catch (exception) {
 						var err = {
-							data: exception.message,
-							type: 'error',
-							serial: data?data.serial:null
+							error: exception.message,
+							result: null,
+							id: data?data.id:null
 						};
 
 						self.socket.send(JSON.stringify(err));
@@ -228,31 +228,31 @@
 		}
 
 		var makeCall = function (func, args, params) {
-			self.serial += 2;
+			self.id += 2;
 			var deferred = Q.defer();
 
 			var callObj = {
-				serial: self.serial,
-				call: func,
+				id: self.id,
+				method: func,
 				// type: 'callback', // By default.
-				arguments: args
+				params: args
 			};
 
 			var state = self.public.state();
 
 			if (state === 'OPEN') {
-				self.store[self.serial] = deferred;
+				self.store[self.id] = deferred;
 				self.socket.send(JSON.stringify(callObj));
 			} else if (state === 'CONNECTING') {
 				log('SOCKET IS: ' + state);
-				self.store[self.serial] = deferred;
+				self.store[self.id] = deferred;
 				self.callQueue.push(callObj);
 			} else {
 				log('SOCKET IS: ' + state);
 				if (params && params.noWait) {
 					deferred.reject('Socket is: ' + state);
 				} else {
-					self.store[self.serial] = deferred;
+					self.store[self.id] = deferred;
 					self.callQueue.push(callObj);
 				}
 			}

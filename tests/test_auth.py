@@ -18,7 +18,7 @@ class TestAuth(BaseTestCase):
         with self.assertRaises(WSServerHandshakeError) as e:
             await self.get_ws_client()
 
-        self.assertEqual(e.exception.code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(e.exception.status, HTTPStatus.FORBIDDEN)
 
     async def test_auth_ok(self):
         self.WebSocketHandler.AUTHORIZE = True

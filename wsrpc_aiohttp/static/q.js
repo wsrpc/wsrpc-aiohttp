@@ -38,15 +38,15 @@
 	if (typeof bootstrap === "function") {
 		bootstrap("promise", definition);
 
-	// CommonJS
+		// CommonJS
 	} else if (typeof exports === "object" && typeof module === "object") {
 		module.exports = definition();
 
-	// RequireJS
+		// RequireJS
 	} else if (typeof define === "function" && define.amd) {
 		define(definition);
 
-	// SES (Secure EcmaScript)
+		// SES (Secure EcmaScript)
 	} else if (typeof ses !== "undefined") {
 		if (!ses.ok()) {
 			return;
@@ -54,7 +54,7 @@
 			ses.makeQ = definition;
 		}
 
-	// <script>
+		// <script>
 	} else if (typeof window !== "undefined" || typeof self !== "undefined") {
 		// Prefer window over self for add-on scripts. Use self for
 		// non-windowed contexts.
@@ -86,19 +86,19 @@
 		hasStacks = !!e.stack;
 	}
 
-	// All code after this point will be filtered from stack traces reported
-	// by Q.
+// All code after this point will be filtered from stack traces reported
+// by Q.
 	var qStartingLine = captureLine();
 	var qFileName;
 
-	// shims
+// shims
 
-	// used for fallback in "allResolved"
+// used for fallback in "allResolved"
 	var noop = function () {
 	};
 
-	// Use the fastest possible means to execute a task in a future turn
-	// of the event loop.
+// Use the fastest possible means to execute a task in a future turn
+// of the event loop.
 	var nextTick = (function () {
 		// linked list of tasks (single, with head node)
 		var head = {task: void 0, next: null};
@@ -249,16 +249,16 @@
 		return nextTick;
 	})();
 
-	// Attempt to make generics safe in the face of downstream
-	// modifications.
-	// There is no situation where this is necessary.
-	// If you need a security guarantee, these primordials need to be
-	// deeply frozen anyway, and if you don’t need a security guarantee,
-	// this is just plain paranoid.
-	// However, this **might** have the nice side-effect of reducing the size of
-	// the minified code by reducing x.call() to merely x()
-	// See Mark Miller’s explanation of what this does.
-	// http://wiki.ecmascript.org/doku.php?id=conventions:safe_meta_programming
+// Attempt to make generics safe in the face of downstream
+// modifications.
+// There is no situation where this is necessary.
+// If you need a security guarantee, these primordials need to be
+// deeply frozen anyway, and if you don’t need a security guarantee,
+// this is just plain paranoid.
+// However, this **might** have the nice side-effect of reducing the size of
+// the minified code by reducing x.call() to merely x()
+// See Mark Miller’s explanation of what this does.
+// http://wiki.ecmascript.org/doku.php?id=conventions:safe_meta_programming
 	var call = Function.call;
 
 	function uncurryThis(f) {
@@ -267,9 +267,9 @@
 		};
 	}
 
-	// This is equivalent, but slower:
-	// uncurryThis = Function_bind.bind(Function_bind.call);
-	// http://jsperf.com/uncurrythis
+// This is equivalent, but slower:
+// uncurryThis = Function_bind.bind(Function_bind.call);
+// http://jsperf.com/uncurrythis
 
 	var array_slice = uncurryThis(Array.prototype.slice);
 
@@ -326,29 +326,29 @@
 	);
 
 	var object_create = Object.create || function (prototype) {
-			function Type() {
-			}
+		function Type() {
+		}
 
-			Type.prototype = prototype;
-			return new Type();
-		};
+		Type.prototype = prototype;
+		return new Type();
+	};
 
 	var object_defineProperty = Object.defineProperty || function (obj, prop, descriptor) {
-			obj[prop] = descriptor.value;
-			return obj;
-		};
+		obj[prop] = descriptor.value;
+		return obj;
+	};
 
 	var object_hasOwnProperty = uncurryThis(Object.prototype.hasOwnProperty);
 
 	var object_keys = Object.keys || function (object) {
-			var keys = [];
-			for (var key in object) {
-				if (object_hasOwnProperty(object, key)) {
-					keys.push(key);
-				}
+		var keys = [];
+		for (var key in object) {
+			if (object_hasOwnProperty(object, key)) {
+				keys.push(key);
 			}
-			return keys;
-		};
+		}
+		return keys;
+	};
 
 	var object_toString = uncurryThis(Object.prototype.toString);
 
@@ -356,9 +356,9 @@
 		return value === Object(value);
 	}
 
-	// generator related shims
+// generator related shims
 
-	// FIXME: Remove this function once ES6 generators are in SpiderMonkey.
+// FIXME: Remove this function once ES6 generators are in SpiderMonkey.
 	function isStopIteration(exception) {
 		return (
 			object_toString(exception) === "[object StopIteration]" ||
@@ -366,8 +366,8 @@
 		);
 	}
 
-	// FIXME: Remove this helper and Q.return once ES6 generators are in
-	// SpiderMonkey.
+// FIXME: Remove this helper and Q.return once ES6 generators are in
+// SpiderMonkey.
 	var QReturnValue;
 	if (typeof ReturnValue !== "undefined") {
 		QReturnValue = ReturnValue;
@@ -377,7 +377,7 @@
 		};
 	}
 
-	// long stack traces
+// long stack traces
 
 	var STACK_JUMP_SEPARATOR = "From previous event:";
 
@@ -404,7 +404,10 @@
 
 			var concatedStacks = stacks.join("\n" + STACK_JUMP_SEPARATOR + "\n");
 			var stack = filterStackString(concatedStacks);
-			object_defineProperty(error, "stack", {value: stack, configurable: true});
+			object_defineProperty(error, "stack", {
+				value: stack,
+				configurable: true
+			});
 		}
 	}
 
@@ -462,8 +465,8 @@
 			lineNumber <= qEndingLine;
 	}
 
-	// discover own file name and line number range for filtering stack
-	// traces
+// discover own file name and line number range for filtering stack
+// traces
 	function captureLine() {
 		if (!hasStacks) {
 			return;
@@ -495,8 +498,8 @@
 		};
 	}
 
-	// end of shims
-	// beginning of real work
+// end of shims
+// beginning of real work
 
 	/**
 	 * Constructs a promise for an immediate reference, passes promises through, or
@@ -556,6 +559,7 @@
 	 * `resolve` with that other thenable.
 	 */
 	Q.defer = defer;
+
 	function defer() {
 		// if "messages" is an "Array", that indicates that the promise has not yet
 		// been resolved.  If it is "undefined", it has been resolved.  Each
@@ -703,6 +707,7 @@
 	 */
 	Q.Promise = promise; // ES6
 	Q.promise = promise;
+
 	function promise(resolver) {
 		if (typeof resolver !== "function") {
 			throw new TypeError("resolver must be a function.");
@@ -721,9 +726,9 @@
 	promise.reject = reject; // ES6
 	promise.resolve = Q; // ES6
 
-	// XXX experimental.  This method is a way to denote that a local value is
-	// serializable and should be immediately dispatched to a remote upon request,
-	// instead of passing a reference.
+// XXX experimental.  This method is a way to denote that a local value is
+// serializable and should be immediately dispatched to a remote upon request,
+// instead of passing a reference.
 	Q.passByCopy = function (object) {
 		//freeze(object);
 		//passByCopies.set(object, true);
@@ -766,6 +771,7 @@
 	 * @returns {Any*} the first promise to be settled
 	 */
 	Q.race = race;
+
 	function race(answerPs) {
 		return promise(function (resolve, reject) {
 			// Switch to this once we can assume at least ES5
@@ -795,6 +801,7 @@
 	 * bought and sold.
 	 */
 	Q.makePromise = Promise;
+
 	function Promise(descriptor, fallback, inspect) {
 		if (fallback === void 0) {
 			fallback = function (op) {
@@ -965,6 +972,7 @@
 	 * @return promise for the return value from the invoked callback
 	 */
 	Q.when = when;
+
 	function when(value, fulfilled, rejected, progressed) {
 		return Q(value).then(fulfilled, rejected, progressed);
 	}
@@ -1001,6 +1009,7 @@
 
 // XXX should we re-do this?
 	Q.nearer = nearer;
+
 	function nearer(value) {
 		if (isPromise(value)) {
 			var inspected = value.inspect();
@@ -1016,11 +1025,13 @@
 	 * Otherwise it is a fulfilled value.
 	 */
 	Q.isPromise = isPromise;
+
 	function isPromise(object) {
 		return object instanceof Promise;
 	}
 
 	Q.isPromiseAlike = isPromiseAlike;
+
 	function isPromiseAlike(object) {
 		return isObject(object) && typeof object.then === "function";
 	}
@@ -1030,6 +1041,7 @@
 	 * fulfilled or rejected.
 	 */
 	Q.isPending = isPending;
+
 	function isPending(object) {
 		return isPromise(object) && object.inspect().state === "pending";
 	}
@@ -1043,6 +1055,7 @@
 	 * promise.
 	 */
 	Q.isFulfilled = isFulfilled;
+
 	function isFulfilled(object) {
 		return !isPromise(object) || object.inspect().state === "fulfilled";
 	}
@@ -1055,6 +1068,7 @@
 	 * @returns whether the given object is a rejected promise.
 	 */
 	Q.isRejected = isRejected;
+
 	function isRejected(object) {
 		return isPromise(object) && object.inspect().state === "rejected";
 	}
@@ -1063,12 +1077,12 @@
 		return this.inspect().state === "rejected";
 	};
 
-	//// BEGIN UNHANDLED REJECTION TRACKING
+//// BEGIN UNHANDLED REJECTION TRACKING
 
-	// This promise library consumes exceptions thrown in handlers so they can be
-	// handled by a subsequent promise.  The exceptions get added to this array when
-	// they are created, and removed when they are handled.  Note that in ES6 or
-	// shimmed environments, this would naturally be a `Set`.
+// This promise library consumes exceptions thrown in handlers so they can be
+// handled by a subsequent promise.  The exceptions get added to this array when
+// they are created, and removed when they are handled.  Note that in ES6 or
+// shimmed environments, this would naturally be a `Set`.
 	var unhandledReasons = [];
 	var unhandledRejections = [];
 	var reportedUnhandledRejections = [];
@@ -1139,13 +1153,14 @@
 
 	resetUnhandledRejections();
 
-	//// END UNHANDLED REJECTION TRACKING
+//// END UNHANDLED REJECTION TRACKING
 
 	/**
 	 * Constructs a rejected promise.
 	 * @param reason value describing the failure
 	 */
 	Q.reject = reject;
+
 	function reject(reason) {
 		var rejection = Promise({
 			"when": function (rejected) {
@@ -1172,6 +1187,7 @@
 	 * @param value immediate reference
 	 */
 	Q.fulfill = fulfill;
+
 	function fulfill(value) {
 		return Promise({
 			"when": function () {
@@ -1233,6 +1249,7 @@
 	 * without a rejection.
 	 */
 	Q.master = master;
+
 	function master(object) {
 		return Promise({
 			"isDef": function () {
@@ -1255,6 +1272,7 @@
 	 * either callback.
 	 */
 	Q.spread = spread;
+
 	function spread(value, fulfilled, rejected) {
 		return Q(value).spread(fulfilled, rejected);
 	}
@@ -1292,6 +1310,7 @@
 	 *    rejection for the promise returned by the decorated generator.
 	 */
 	Q.async = async;
+
 	function async(makeGenerator) {
 		return function () {
 			// when verb is "send", arg is a value
@@ -1350,11 +1369,12 @@
 	 * generators at the top-level to work with libraries.
 	 */
 	Q.spawn = spawn;
+
 	function spawn(makeGenerator) {
 		Q.done(Q.async(makeGenerator)());
 	}
 
-	// FIXME: Remove this interface once ES6 generators are in SpiderMonkey.
+// FIXME: Remove this interface once ES6 generators are in SpiderMonkey.
 	/**
 	 * Throws a ReturnValue exception to stop an asynchronous generator.
 	 *
@@ -1368,16 +1388,16 @@
 	 * @example
 	 * // ES6 style
 	 * Q.async(function* () {
- *      var foo = yield getFooPromise();
- *      var bar = yield getBarPromise();
- *      return foo + bar;
- * })
+	 *      var foo = yield getFooPromise();
+	 *      var bar = yield getBarPromise();
+	 *      return foo + bar;
+	 * })
 	 * // Older SpiderMonkey style
 	 * Q.async(function () {
- *      var foo = yield getFooPromise();
- *      var bar = yield getBarPromise();
- *      Q.return(foo + bar);
- * })
+	 *      var foo = yield getFooPromise();
+	 *      var bar = yield getBarPromise();
+	 *      Q.return(foo + bar);
+	 * })
 	 */
 	Q["return"] = _return;
 	function _return(value) {
@@ -1392,8 +1412,8 @@
 	 *
 	 * @example
 	 * var add = Q.promised(function (a, b) {
- *     return a + b;
- * });
+	 *     return a + b;
+	 * });
 	 * add(Q(a), Q(B));
 	 *
 	 * @param {function} callback The function to decorate
@@ -1662,9 +1682,12 @@
 			function onRejected(err) {
 				pendingCount--;
 				if (pendingCount === 0) {
-					err.message = ("Q can't get fulfillment value from any promise, all " +
-					"promises were rejected. Last error message: " + err.message);
-					deferred.reject(err);
+					var rejection = err || new Error("" + err);
+
+					rejection.message = ("Q can't get fulfillment value from any promise, all " +
+						"promises were rejected. Last error message: " + rejection.message);
+
+					deferred.reject(rejection);
 				}
 			}
 
@@ -1712,6 +1735,7 @@
 	 * @see Promise#allSettled
 	 */
 	Q.allSettled = allSettled;
+
 	function allSettled(promises) {
 		return Q(promises).allSettled();
 	}
@@ -1982,6 +2006,7 @@
 			var nodeArgs = baseArgs.concat(array_slice(arguments));
 			var deferred = defer();
 			nodeArgs.push(deferred.makeNodeResolver());
+
 			function bound() {
 				return callback.apply(thisp, arguments);
 			}
@@ -2061,6 +2086,7 @@
 	 * @returns either the promise or nothing
 	 */
 	Q.nodeify = nodeify;
+
 	function nodeify(object, nodeback) {
 		return Q(object).nodeify(nodeback);
 	}

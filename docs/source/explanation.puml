@@ -13,10 +13,9 @@ jslib -> ws: Sending json
 
 note right of ws
     {
-        "serial": 1,
-        "call": "uuid4",
-        "arguments": {},
-        "type": "call"
+        "id": 1,
+        "method": "uuid4",
+        "params": {}
     }
 end note
 
@@ -27,9 +26,8 @@ backend -> ws: Sending json
 
 note left of backend
     {
-        "serial": 1,
-        "data": "8927d899-497a-4851-98d4-0a3a0e07fdd5",
-        "type": "callback"
+        "id": 1,
+        "result": "8927d899-497a-4851-98d4-0a3a0e07fdd5",
     }
 end note
 

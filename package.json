@@ -1,0 +1,32 @@
+{
+  "name": "wsrpc-python",
+  "version": "1.0.7",
+  "description": "WebSocket based RPC",
+  "main": "wsrpc_aiohttp/static/wsrpc.min.js",
+  "dependencies": {
+    "q": "~1.5.1"
+  },
+  "directories": {
+    "lib": "wsrpc_aiohttp/static"
+  },
+  "files": [
+    "wsrpc_aiohttp/static/wsrpc.js",
+    "wsrpc_aiohttp/static/wsrpc.min.js",
+    "wsrpc_aiohttp/static/wsrpc.min.js.map"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wsrpc/wsrpc-aiohttp.git"
+  },
+  "keywords": [
+    "websocket",
+    "rpc",
+    "python"
+  ],
+  "author": "Dmitry Orlov <me@mosquito.su> (https://github.com/mosquito)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wsrpc/wsrpc-aiohttp/issues"
+  },
+  "homepage": "https://wsrpc.info/"
+}

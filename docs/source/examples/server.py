@@ -1,4 +1,6 @@
 import logging
+import time
+
 import aiohttp.web
 import asyncio
 from random import choice
@@ -33,7 +35,7 @@ class TestRoute(WebSocketRoute):
         return "I'm delayed {0} seconds".format(delay)
 
     async def getEpoch(self):
-        return self.loop.time()
+        return time.time()
 
     async def requiredArgument(self, _my_secret_arg):
         return True
@@ -48,7 +50,10 @@ class TestRoute(WebSocketRoute):
         joke = choice(self.JOKES)
 
         result = await self.socket.proxy.joke(joke=joke)
-        log.info('Client said that was "{0}"'.format('awesome' if result else 'awful'))
+        log.info(
+            'Client said that was "%s"',
+            ('awesome' if result else 'awful')
+        )
         return 'Cool' if result else 'Hmm.. Try again.'
 
 

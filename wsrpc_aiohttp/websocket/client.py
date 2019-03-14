@@ -62,8 +62,8 @@ class WSRPCClient(WSRPCBase):
             log.debug(
                 "Sending message to %s serial %s: %s",
                 self._url,
-                Lazy(lambda: str(kwargs.get('serial'))),
-                Lazy(lambda: str(kwargs))
+                Lazy(lambda: kwargs.get('id')),
+                Lazy(lambda: kwargs),
               )
 
             if self.socket.closed:

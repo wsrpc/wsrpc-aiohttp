@@ -11,12 +11,16 @@ WSRPC aiohttp
 
 .. image:: https://img.shields.io/pypi/wheel/wsrpc-aiohttp.svg
     :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
+    :alt: python wheel
 
 .. image:: https://img.shields.io/pypi/pyversions/wsrpc-aiohttp.svg
     :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
+    :alt: Python Versions
 
 .. image:: https://img.shields.io/pypi/l/wsrpc-aiohttp.svg
     :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
+    :alt: license
+
 
 Remote Procedure call through WebSocket between browser and tornado.
 
