@@ -1,4 +1,6 @@
 import logging
+import time
+
 import aiohttp.web
 import asyncio
 from random import choice
@@ -33,7 +35,7 @@ class TestRoute(WebSocketRoute):
         return "I'm delayed {0} seconds".format(delay)
 
     async def getEpoch(self):
-        return self.loop.time()
+        return time.time()
 
     async def requiredArgument(self, _my_secret_arg):
         return True
