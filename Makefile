@@ -14,3 +14,13 @@ doc: upload_doc
 develop:
 	virtualenv $(VENV)
 	$(VENV)/bin/pip install -Ue ".[develop]"
+
+npm_release:
+	java -jar contrib/closure-compiler-v20190301.jar \
+		--create_source_map wsrpc_aiohttp/static/wsrpc.min.js.map \
+		--js_output_file wsrpc_aiohttp/static/wsrpc.min.js \
+		wsrpc_aiohttp/static/q.js \
+		wsrpc_aiohttp/static/wsrpc.js
+
+	pandoc -s -w markdown --toc README.rst -o README.md
+	npm publish
