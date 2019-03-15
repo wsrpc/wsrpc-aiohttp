@@ -5,7 +5,7 @@ import aiohttp.web
 import asyncio
 from random import choice
 
-from wsrpc_aiohttp import WebSocketAsync, WebSocketRoute
+from wsrpc_aiohttp import WebSocketAsync, STATIC_DIR, WebSocketRoute
 
 loop = asyncio.get_event_loop()
 app = aiohttp.web.Application(loop=loop)
@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 
 app.router.add_route("*", "/ws/", WebSocketAsync)
+app.router.add_static('/js', STATIC_DIR)
 app.router.add_static('/', ".")
 
 

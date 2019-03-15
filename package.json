@@ -1,15 +1,13 @@
 {
   "name": "wsrpc-python",
-  "version": "1.0.8",
+  "version": "2.0.0",
   "description": "WebSocket based RPC",
-  "main": "wsrpc_aiohttp/static/wsrpc.min.js",
+  "main": "wsrpc_aiohttp/static/wsrpc.js",
   "directories": {
     "lib": "wsrpc_aiohttp/static"
   },
   "files": [
-    "wsrpc_aiohttp/static/wsrpc.js",
-    "wsrpc_aiohttp/static/wsrpc.min.js",
-    "wsrpc_aiohttp/static/wsrpc.min.js.map"
+    "wsrpc_aiohttp/static/wsrpc.js"
   ],
   "repository": {
     "type": "git",

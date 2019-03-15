@@ -1,4 +1,19 @@
 (function (global) {
+	function Deferred() {
+		var self = this;
+		self.resolve = null;
+		self.reject = null;
+
+		self.promise = new Promise(
+			function (resolve, reject) {
+				self.resolve = resolve;
+				self.reject = reject;
+			}.bind(self)
+		);
+
+		Object.freeze(self);
+	}
+
 	function WSRPCConstructor (URL, reconnectTimeout) {
 		var self = this;
 		self.id = 1;
@@ -229,7 +244,7 @@
 
 		var makeCall = function (func, args, params) {
 			self.id += 2;
-			var deferred = Q.defer();
+			var deferred = new Deferred();
 
 			var callObj = {
 				id: self.id,
@@ -288,7 +303,7 @@
 				}
 			},
 			onEvent: function (event) {
-				var deferred = Q.defer();
+				var deferred = new Deferred();
 				self.oneTimeEventStore[event].push(deferred);
 				return deferred.promise;
 			},
