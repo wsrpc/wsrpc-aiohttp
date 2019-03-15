@@ -300,7 +300,7 @@ class WSRPCBase:
 
         send_future = self._send(id=serial, method=func, params=kwargs)
 
-        log.info("Sending %r request #%d \"%s(%r)\" to the client.",
+        log.info("Sending request #%r \"%s(%r)\" to the client.",
                  serial, func, kwargs)
 
         future = asyncio.ensure_future(asyncio.wait_for(
