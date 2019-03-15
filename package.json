@@ -1,6 +1,6 @@
 {
   "name": "wsrpc-python",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "WebSocket based RPC",
   "main": "wsrpc_aiohttp/static/wsrpc.min.js",
   "directories": {
