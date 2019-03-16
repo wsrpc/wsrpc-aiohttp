@@ -1,6 +1,6 @@
 {
   "name": "wsrpc-python",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "WebSocket based JSONRPC client",
   "main": "wsrpc.js",
   "repository": {

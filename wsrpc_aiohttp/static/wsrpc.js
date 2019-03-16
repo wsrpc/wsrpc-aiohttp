@@ -50,7 +50,7 @@
 		window.location.host
 	);
 	// noinspection ES6ConvertVarToLetConst
-	var absUrl = new RegExp("^\w+://");
+	var absUrl = /^\w+:\/\//;
 
 	function WSRPCConstructor(URL, reconnectTimeout) {
 		if (!absUrl.test(URL)) URL = baseUrl + URL;
