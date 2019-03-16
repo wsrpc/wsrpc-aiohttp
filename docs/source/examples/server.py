@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 
 import aiohttp.web
@@ -14,7 +15,7 @@ log = logging.getLogger(__name__)
 
 app.router.add_route("*", "/ws/", WebSocketAsync)
 app.router.add_static('/js', STATIC_DIR)
-app.router.add_static('/', ".")
+app.router.add_static('/', os.path.dirname(os.path.abspath(__file__)))
 
 
 class TestRoute(WebSocketRoute):
