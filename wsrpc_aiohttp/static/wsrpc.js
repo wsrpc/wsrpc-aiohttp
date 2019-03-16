@@ -1,10 +1,15 @@
 (function (global) {
+	function preventUseWithoutNew(self, func) {
+		if (self.constructor === func) return;
+		throw new Error('Calling without "new" is restricted.');
+	}
+
 	if (typeof(window.Promise) !== 'undefined') {
+		// noinspection JSDuplicatedDeclaration
 		function Deferred() {
 			var self = this;
 
-			if (self.constructor !== Deferred)
-				throw new Error('Calling without "new" is restricted.');
+			preventUseWithoutNew(self, Deferred);
 
 			self.resolve = null;
 			self.reject = null;
@@ -29,6 +34,7 @@
 			Object.freeze(self);
 		}
 	} else if (typeof(window.Q) !== 'undefined') {
+		// noinspection JSDuplicatedDeclaration
 		var Deferred = window.Q.defer;
 	} else {
 		console.error(
@@ -38,11 +44,20 @@
 		return;
 	}
 
+	// noinspection ES6ConvertVarToLetConst
+	var baseUrl = (
+		(window.location.protocol === "https:" ? "wss://" : "ws://") +
+		window.location.host
+	);
+	// noinspection ES6ConvertVarToLetConst
+	var absUrl = new RegExp("^\w+://");
+
 	function WSRPCConstructor(URL, reconnectTimeout) {
+		if (!absUrl.test(URL)) URL = baseUrl + URL;
+
 		var self = this;
 
-		if (self.constructor !== WSRPCConstructor)
-			throw new Error('Calling without "new" is restricted.');
+		preventUseWithoutNew(self, WSRPCConstructor);
 
 		self.id = 1;
 		self.eventId = 0;
@@ -120,11 +135,12 @@
 
 			var rejectQueue = function () {
 				self.connectionNumber++; // rejects incoming calls
+				var deferred;
 
 				//reject all pending calls
 				while (0 < self.callQueue.length) {
 					var callObj = self.callQueue.shift();
-					var deferred = self.store[callObj.serial];
+					deferred = self.store[callObj.serial];
 					delete self.store[callObj.serial];
 
 					if (deferred && deferred.promise.isPending()) {
@@ -134,8 +150,9 @@
 
 				// reject all from the store
 				for (var key in self.store) {
-					var deferred = self.store[key];
+					if (!self.store.hasOwnProperty(key)) continue;
 
+					deferred = self.store[key];
 					if (deferred && deferred.promise.isPending()) {
 						deferred.reject('WebSocket error occurred');
 					}
@@ -147,6 +164,7 @@
 				trace(err);
 
 				for (var serial in self.store) {
+					if (!self.store.hasOwnProperty(serial)) continue;
 					if (self.store[serial].hasOwnProperty('reject')) {
 						self.store[serial].reject('Connection closed');
 					}
@@ -184,14 +202,13 @@
 
 			function callEvents(evName, event) {
 				while (0 < self.oneTimeEventStore[evName].length) {
-					var def = self.oneTimeEventStore[evName].shift();
-
-					if (def.hasOwnProperty('resolve') && def.promise.isPending()) {
-						def.resolve();
-					}
+					var deferred = self.oneTimeEventStore[evName].shift();
+					if (deferred.hasOwnProperty('resolve') &&
+						deferred.promise.isPending()) deferred.resolve();
 				}
 
 				for (var i in self.eventStore[evName]) {
+					if (!self.eventStore[evName].hasOwnProperty(i)) continue;
 					var cur = self.eventStore[evName][i];
 					tryCallEvent(cur, event);
 				}
@@ -202,6 +219,7 @@
 				trace(ev);
 
 				while (0 < self.callQueue.length) {
+					// noinspection JSUnresolvedFunction
 					self.socket.send(JSON.stringify(self.callQueue.shift(), 0, 1));
 				}
 
@@ -213,29 +231,32 @@
 				log('WSRPC: ONMESSAGE CALLED (' + self.public.state() + ')');
 				trace(message);
 				var data = null;
-				if (message.type == 'message') {
+				if (message.type === 'message') {
+					var deferred;
+
 					try {
 						data = JSON.parse(message.data);
 						log(data.data);
 						if (data.hasOwnProperty('method')) {
 							if (!self.routes.hasOwnProperty(data.method)) {
-								throw Error('Route not found');
+								// noinspection ExceptionCaughtLocallyJS
+								throw new Error('Route not found');
 							}
 
 							var connectionNumber = self.connectionNumber;
 
-							var deferred = new Deferred();
+							deferred = new Deferred();
 
 							deferred.promise.then(
 								function (result) {
-									if (connectionNumber != self.connectionNumber) return;
+									if (connectionNumber !== self.connectionNumber) return;
 									self.socket.send(JSON.stringify({
 										id: data.id,
 										result: result
 									}));
 								},
 								function (error) {
-									if (connectionNumber != self.connectionNumber) return;
+									if (connectionNumber !== self.connectionNumber) return;
 									self.socket.send(JSON.stringify({
 										id: data.id,
 										error: error
@@ -259,7 +280,7 @@
 							if (!self.store.hasOwnProperty(data.id)) {
 								return log('Unknown callback');
 							}
-							var deferred = self.store[data.id];
+							deferred = self.store[data.id];
 							if (typeof deferred === 'undefined') {
 								return log('Confirmation without handler');
 							}
@@ -267,7 +288,7 @@
 							log('REJECTING: ' + data.error);
 							deferred.reject(data.error);
 						} else {
-							var deferred = self.store[data.id];
+							deferred = self.store[data.id];
 							if (typeof deferred === 'undefined') {
 								return log('Confirmation without handler');
 							}
@@ -301,7 +322,6 @@
 			var callObj = {
 				id: self.id,
 				method: func,
-				// type: 'callback', // By default.
 				params: args
 			};
 
@@ -316,7 +336,7 @@
 				self.callQueue.push(callObj);
 			} else {
 				log('SOCKET IS: ' + state);
-				if (params && params.noWait) {
+				if (params && params['noWait']) {
 					deferred.reject('Socket is: ' + state);
 				} else {
 					self.store[self.id] = deferred;
@@ -390,4 +410,4 @@
 	global.WSRPC = WSRPCConstructor;
 	global.WSRPC.DEBUG = false;
 	global.WSRPC.TRACE = false;
-})(this);
+})(window);

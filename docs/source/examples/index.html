@@ -5,9 +5,7 @@
 	<title>wsRPC</title>
 	<script type="text/javascript" src="/js/wsrpc.js"></script>
 	<script type="text/javascript">
-        let url = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + '/ws/';
-
-        RPC = new WSRPC(url, 5000);
+        RPC = new WSRPC("/ws/", 5000);
         RPC.connect();
 
 		async function test(func, args) {
