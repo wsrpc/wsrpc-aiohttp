@@ -137,3 +137,6 @@ fabric.properties
 /temp
 .DS_Store
 README.md
+
+*.min.js
+*.min.js.map

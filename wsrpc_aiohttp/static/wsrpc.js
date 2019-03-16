@@ -44,19 +44,54 @@
 		return;
 	}
 
-	// noinspection ES6ConvertVarToLetConst
-	var baseUrl = (
-		(window.location.protocol === "https:" ? "wss://" : "ws://") +
-		window.location.host
-	);
-	// noinspection ES6ConvertVarToLetConst
-	var absUrl = /^\w+:\/\//;
+	if ('group' in console && 'groupEnd' in console && 'dir' in console) {
+		function logGroup(group, level, args) {
+			console.group(group);
+			console[level].apply(this, args);
+			console.groupEnd();
+		}
+	} else {
+		function logGroup(group, level, args) {
+			console[level](args.join(" "));
+		}
+	}
+
+	function log () {
+		if (!global.WSRPC.DEBUG) return;
+		logGroup('WSRPC.DEBUG', 'trace', arguments);
+	}
+
+	var trace = function trace (msg) {
+		if (!global.WSRPC.TRACE) return;
+
+		var payload = msg;
+		if ('data' in msg) payload = JSON.parse(msg.data);
+		logGroup("WSRPC.TRACE", 'trace', [payload]);
+	};
+
+	function getAbsoluteWsUrl(url) {
+		if ((/^\w+:\/\//).test(url)) return url;
+		if (window.location.host.length < 1)
+			throw new Error(
+				"Can not construct absolute URL from " + window.location
+			);
+		var scheme = window.location.protocol === "https:" ? "wss://" : "ws://";
+		return scheme + window.location.host + url;
+	}
+
+	var readyState = {
+		0: 'CONNECTING',
+		1: 'OPEN',
+		2: 'CLOSING',
+		3: 'CLOSED'
+	};
 
 	function WSRPCConstructor(URL, reconnectTimeout) {
-		if (!absUrl.test(URL)) URL = baseUrl + URL;
-
 		var self = this;
 
+		reconnectTimeout = reconnectTimeout || 1000;
+
+		URL = getAbsoluteWsUrl(URL);
 		preventUseWithoutNew(self, WSRPCConstructor);
 
 		self.id = 1;
@@ -77,58 +112,6 @@
 		};
 
 		self.callQueue = [];
-
-		var log = function (msg) {
-			if (global.WSRPC.DEBUG) {
-				if ('group' in console && 'groupEnd' in console) {
-					console.group('WSRPC.DEBUG');
-					console.debug(msg);
-					console.groupEnd();
-				} else {
-					console.debug(msg);
-				}
-			}
-		};
-
-		var trace = function (msg) {
-			if (global.WSRPC.TRACE) {
-				if ('group' in console && 'groupEnd' in console && 'dir' in console) {
-					console.group('WSRPC.TRACE');
-					if ('data' in msg) {
-						console.dir(JSON.parse(msg.data));
-					} else {
-						console.dir(msg)
-					}
-					console.groupEnd();
-				} else {
-					if ('data' in msg) {
-						console.log('OBJECT DUMP: ' + msg.data);
-					} else {
-						console.log('OBJECT DUMP: ' + msg);
-					}
-				}
-			}
-		};
-
-		var readyState = {
-			0: 'CONNECTING',
-			1: 'OPEN',
-			2: 'CLOSING',
-			3: 'CLOSED'
-		};
-
-		function reconnect(callEvents) {
-			setTimeout(function () {
-				try {
-					self.socket = createSocket();
-					self.id = 1;
-				} catch (exc) {
-					callEvents('onerror', exc);
-					delete self.socket;
-					log(exc);
-				}
-			}, reconnectTimeout || 1000);
-		}
 
 		function createSocket(ev) {
 			var ws = new WebSocket(URL);
@@ -159,8 +142,21 @@
 				}
 			};
 
+			function reconnect(callEvents) {
+				setTimeout(function () {
+					try {
+						self.socket = createSocket();
+						self.id = 1;
+					} catch (exc) {
+						callEvents('onerror', exc);
+						delete self.socket;
+						console.error(exc);
+					}
+				}, reconnectTimeout);
+			}
+
 			ws.onclose = function (err) {
-				log('WSRPC: ONCLOSE CALLED (STATE: ' + self.public.state() + ')');
+				log('ONCLOSE CALLED', 'STATE', self.public.state());
 				trace(err);
 
 				for (var serial in self.store) {
@@ -177,14 +173,14 @@
 			};
 
 			ws.onerror = function (err) {
-				log('WSRPC: ONERROR CALLED (STATE: ' + self.public.state() + ')');
+				log('ONERROR CALLED', 'STATE', self.public.state());
 				trace(err);
 
 				rejectQueue();
 				callEvents('onerror', err);
 				callEvents('onchange', err);
 
-				log(['WebSocket has been closed by error: ', err]);
+				log('WebSocket has been closed by error: ', err);
 			};
 
 			function tryCallEvent(func, event) {
@@ -194,7 +190,7 @@
 					if (e.hasOwnProperty('stack')) {
 						log(e.stack);
 					} else {
-						log('Event function ' + func + ' raised unknown error: ' + e);
+						log('Event function', func, 'raised unknown error:', e);
 					}
 					console.error(e);
 				}
@@ -215,7 +211,7 @@
 			}
 
 			ws.onopen = function (ev) {
-				log('WSRPC: ONOPEN CALLED (STATE: ' + self.public.state() + ')');
+				log('ONOPEN CALLED', 'STATE', self.public.state());
 				trace(ev);
 
 				while (0 < self.callQueue.length) {
@@ -227,88 +223,107 @@
 				callEvents('onchange', ev);
 			};
 
-			ws.onmessage = function (message) {
-				log('WSRPC: ONMESSAGE CALLED (' + self.public.state() + ')');
-				trace(message);
-				var data = null;
-				if (message.type === 'message') {
-					var deferred;
+			function handleCall(self, data) {
+				if (!self.routes.hasOwnProperty(data.method))
+					throw new Error('Route not found');
 
-					try {
-						data = JSON.parse(message.data);
-						log(data.data);
-						if (data.hasOwnProperty('method')) {
-							if (!self.routes.hasOwnProperty(data.method)) {
-								// noinspection ExceptionCaughtLocallyJS
-								throw new Error('Route not found');
-							}
+				var connectionNumber = self.connectionNumber;
+				var deferred = new Deferred();
 
-							var connectionNumber = self.connectionNumber;
-
-							deferred = new Deferred();
-
-							deferred.promise.then(
-								function (result) {
-									if (connectionNumber !== self.connectionNumber) return;
-									self.socket.send(JSON.stringify({
-										id: data.id,
-										result: result
-									}));
-								},
-								function (error) {
-									if (connectionNumber !== self.connectionNumber) return;
-									self.socket.send(JSON.stringify({
-										id: data.id,
-										error: error
-									}));
-								}
-							);
-
-							var func = self.routes[data.method];
-
-							if (self.asyncRoutes[data.method]) {
-								func.apply(deferred, [data.params]);
-							} else {
-								try {
-									deferred.resolve(func.apply(null, [data.params]));
-								} catch (e) {
-									deferred.reject(e);
-									console.error(e);
-								}
-							}
-						} else if (data.hasOwnProperty('error') && data.error === null) {
-							if (!self.store.hasOwnProperty(data.id)) {
-								return log('Unknown callback');
-							}
-							deferred = self.store[data.id];
-							if (typeof deferred === 'undefined') {
-								return log('Confirmation without handler');
-							}
-							delete self.store[data.id];
-							log('REJECTING: ' + data.error);
-							deferred.reject(data.error);
-						} else {
-							deferred = self.store[data.id];
-							if (typeof deferred === 'undefined') {
-								return log('Confirmation without handler');
-							}
-							delete self.store[data.id];
-							if (data.result) {
-								return deferred.resolve(data.result);
-							} else {
-								return deferred.reject(data.error);
-							}
-						}
-					} catch (exception) {
-						var err = {
-							error: exception.message,
-							result: null,
-							id: data ? data.id : null
-						};
-
-						self.socket.send(JSON.stringify(err));
-						console.error(exception);
+				deferred.promise.then(
+					function (result) {
+						if (connectionNumber !== self.connectionNumber) return;
+						self.socket.send(JSON.stringify({
+							id: data.id,
+							result: result
+						}));
+					},
+					function (error) {
+						if (connectionNumber !== self.connectionNumber) return;
+						self.socket.send(JSON.stringify({
+							id: data.id,
+							error: error
+						}));
 					}
+				);
+
+				var func = self.routes[data.method];
+
+				if (self.asyncRoutes[data.method])
+					return func.apply(deferred, [data.params]);
+
+				function badPromise() {
+					throw new Error(
+						"You should register route with async flag."
+					);
+				}
+
+				var promiseMock = {
+					resolve: badPromise,
+					reject: badPromise,
+				};
+
+				try {
+					deferred.resolve(func.apply(promiseMock, [data.params]));
+				} catch (e) {
+					deferred.reject(e);
+					console.error(e);
+				}
+			}
+
+			function handleError(self, data) {
+				if (!self.store.hasOwnProperty(data.id))
+					return log('Unknown callback');
+
+				var deferred = self.store[data.id];
+
+				if (typeof deferred === 'undefined')
+					return log('Confirmation without handler');
+
+				delete self.store[data.id];
+				log('REJECTING', data.error);
+				deferred.reject(data.error);
+			}
+
+			function handleResult(self, data) {
+				var deferred = self.store[data.id];
+				if (typeof deferred === 'undefined')
+					return log('Confirmation without handler');
+
+				delete self.store[data.id];
+
+				if (data.result)
+					return deferred.resolve(data.result);
+				return deferred.reject(data.error);
+			}
+
+			ws.onmessage = function (message) {
+				log('ONMESSAGE CALLED', 'STATE', self.public.state());
+				trace(message);
+
+				if (message.type !== 'message') return;
+
+				var data;
+
+				try {
+					data = JSON.parse(message.data);
+					log(data);
+					if (data.hasOwnProperty('method')) {
+						return handleCall(self, data);
+					} else if (data.hasOwnProperty('error') && data.error === null) {
+						return handleError(self, data);
+					} else {
+						return handleResult(self, data);
+					}
+				} catch (exception) {
+					var err = {
+						error: exception.message,
+						result: null,
+						id: data ? data.id : null
+					};
+
+					self.socket.send(JSON.stringify(err));
+					console.error(exception);
 				}
 			};
 
@@ -331,11 +346,11 @@
 				self.store[self.id] = deferred;
 				self.socket.send(JSON.stringify(callObj));
 			} else if (state === 'CONNECTING') {
-				log('SOCKET IS: ' + state);
+				log('SOCKET IS', state);
 				self.store[self.id] = deferred;
 				self.callQueue.push(callObj);
 			} else {
-				log('SOCKET IS: ' + state);
+				log('SOCKET IS', state);
 				if (params && params['noWait']) {
 					deferred.reject('Socket is: ' + state);
 				} else {
@@ -384,11 +399,12 @@
 				return self.socket.close();
 			},
 			state: function () {
-				if (self.socketStarted && self.socket) {
-					return readyState[self.socket.readyState];
-				} else {
-					return readyState[3];
-				}
+				return readyState[this.stateCode()];
+			},
+			stateCode: function () {
+				if (self.socketStarted && self.socket)
+					return self.socket.readyState;
+				return 3;
 			},
 			connect: function () {
 				self.socketStarted = true;
