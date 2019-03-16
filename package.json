@@ -1,7 +1,7 @@
 {
   "name": "wsrpc-python",
-  "version": "2.0.0",
-  "description": "WebSocket based RPC",
+  "version": "2.1.0",
+  "description": "WebSocket based JSONRPC client",
   "main": "wsrpc_aiohttp/static/wsrpc.js",
   "directories": {
     "lib": "wsrpc_aiohttp/static"
@@ -16,7 +16,8 @@
   "keywords": [
     "websocket",
     "rpc",
-    "python"
+    "python",
+    "jsonrpc"
   ],
   "author": "Dmitry Orlov <me@mosquito.su> (https://github.com/mosquito)",
   "license": "MIT",
