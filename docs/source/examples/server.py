@@ -61,5 +61,13 @@ WebSocketAsync.add_route('test', TestRoute)
 
 
 if __name__ == '__main__':
+    from argparse import ArgumentParser
+
     logging.basicConfig(level=logging.DEBUG)
-    aiohttp.web.run_app(app, port=8000)
+
+    parser = ArgumentParser()
+    parser.add_argument('--listen', default='127.0.0.1')
+    parser.add_argument('--port', type=int, default=8000)
+
+    arguments = parser.parse_args()
+    aiohttp.web.run_app(app, port=arguments.port, host=arguments.listen)

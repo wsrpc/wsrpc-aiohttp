@@ -1,14 +1,8 @@
 {
   "name": "wsrpc-python",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "WebSocket based JSONRPC client",
-  "main": "wsrpc_aiohttp/static/wsrpc.js",
-  "directories": {
-    "lib": "wsrpc_aiohttp/static"
-  },
-  "files": [
-    "wsrpc_aiohttp/static/wsrpc.js"
-  ],
+  "main": "wsrpc.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wsrpc/wsrpc-aiohttp.git"

@@ -16,5 +16,9 @@ develop:
 	$(VENV)/bin/pip install -Ue ".[develop]"
 
 npm_release:
-	pandoc -s -w markdown --toc README.rst -o README.md
-	npm publish
+	rm -fr build/js || true
+	mkdir -p build/js
+	pandoc -s -w markdown --toc README.rst -o build/js/README.md
+	cp -va wsrpc_aiohttp/static/* build/js/
+	cp -va package.json build/js/
+	cd build/js && npm publish
