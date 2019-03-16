@@ -1,21 +1,49 @@
 (function (global) {
-	function Deferred() {
-		var self = this;
-		self.resolve = null;
-		self.reject = null;
+	if (typeof(window.Promise) !== 'undefined') {
+		function Deferred() {
+			var self = this;
 
-		self.promise = new Promise(
-			function (resolve, reject) {
-				self.resolve = resolve;
-				self.reject = reject;
-			}.bind(self)
+			if (self.constructor !== Deferred)
+				throw new Error('Calling without "new" is restricted.');
+
+			self.resolve = null;
+			self.reject = null;
+			self.done = false;
+
+			function wrapper(func) {
+				return function () {
+					if (self.done) throw new Error('Promise already done');
+					self.done = true;
+					return func.apply(this, arguments);
+				}
+			}
+
+			self.promise = new Promise(
+				function (resolve, reject) {
+					self.resolve = wrapper(resolve);
+					self.reject = wrapper(reject);
+				}
+			);
+
+			self.promise.isPending = function () { return !self.done };
+			Object.freeze(self);
+		}
+	} else if (typeof(window.Q) !== 'undefined') {
+		var Deferred = window.Q.defer;
+	} else {
+		console.error(
+			'Browser has no "promises" support ' +
+			'load "Q.js" before "wsrpc.js"'
 		);
-
-		Object.freeze(self);
+		return;
 	}
 
-	function WSRPCConstructor (URL, reconnectTimeout) {
+	function WSRPCConstructor(URL, reconnectTimeout) {
 		var self = this;
+
+		if (self.constructor !== WSRPCConstructor)
+			throw new Error('Calling without "new" is restricted.');
+
 		self.id = 1;
 		self.eventId = 0;
 		self.socketStarted = false;
@@ -87,7 +115,7 @@
 			}, reconnectTimeout || 1000);
 		}
 
-		function createSocket (ev) {
+		function createSocket(ev) {
 			var ws = new WebSocket(URL);
 
 			var rejectQueue = function () {
@@ -119,7 +147,7 @@
 				trace(err);
 
 				for (var serial in self.store) {
-					if (self.store[serial].hasOwnProperty('reject') && self.store[serial].promise.isPending()) {
+					if (self.store[serial].hasOwnProperty('reject')) {
 						self.store[serial].reject('Connection closed');
 					}
 				}
@@ -150,13 +178,14 @@
 					} else {
 						log('Event function ' + func + ' raised unknown error: ' + e);
 					}
+					console.error(e);
 				}
 			}
 
 			function callEvents(evName, event) {
 				while (0 < self.oneTimeEventStore[evName].length) {
 					var def = self.oneTimeEventStore[evName].shift();
-					// TODO: проверить deferred ли это и state === pending
+
 					if (def.hasOwnProperty('resolve') && def.promise.isPending()) {
 						def.resolve();
 					}
@@ -194,15 +223,38 @@
 							}
 
 							var connectionNumber = self.connectionNumber;
-							Q(self.routes[data.method](data.params)).then(function(promisedResult) {
-								if (connectionNumber == self.connectionNumber) {
+
+							var deferred = new Deferred();
+
+							deferred.promise.then(
+								function (result) {
+									if (connectionNumber != self.connectionNumber) return;
 									self.socket.send(JSON.stringify({
 										id: data.id,
-										result: promisedResult,
-										error: null
+										result: result
+									}));
+								},
+								function (error) {
+									if (connectionNumber != self.connectionNumber) return;
+									self.socket.send(JSON.stringify({
+										id: data.id,
+										error: error
 									}));
 								}
-							}).done();
+							);
+
+							var func = self.routes[data.method];
+
+							if (self.asyncRoutes[data.method]) {
+								func.apply(deferred, [data.params]);
+							} else {
+								try {
+									deferred.resolve(func.apply(null, [data.params]));
+								} catch (e) {
+									deferred.reject(e);
+									console.error(e);
+								}
+							}
 						} else if (data.hasOwnProperty('error') && data.error === null) {
 							if (!self.store.hasOwnProperty(data.id)) {
 								return log('Unknown callback');
@@ -230,11 +282,11 @@
 						var err = {
 							error: exception.message,
 							result: null,
-							id: data?data.id:null
+							id: data ? data.id : null
 						};
 
 						self.socket.send(JSON.stringify(err));
-						log(exception.stack);
+						console.error(exception);
 					}
 				}
 			};
@@ -275,37 +327,25 @@
 			return deferred.promise;
 		};
 
+		self.asyncRoutes = {};
 		self.routes = {};
 		self.store = {};
 		self.public = {
 			call: function (func, args, params) {
 				return makeCall(func, args, params);
 			},
-			init: function () {
-				log('Websocket initializing..')
-			},
-			addRoute: function (route, callback) {
+			addRoute: function (route, callback, isAsync) {
+				self.asyncRoutes[route] = isAsync || false;
 				self.routes[route] = callback;
 			},
-			addEventListener: function (event, func, returnId) {
-				if (returnId === undefined) {
-					returnId = false;
-				}
-
-				var eventId = self.eventId++;
-
-				self.eventStore[event][eventId] = func;
-
-				if (returnId) {
-					return eventId;
-				} else {
-					return func;
-				}
+			deleteRoute: function (route) {
+				delete self.asyncRoutes[route];
+				return delete self.routes[route];
 			},
-			onEvent: function (event) {
-				var deferred = new Deferred();
-				self.oneTimeEventStore[event].push(deferred);
-				return deferred.promise;
+			addEventListener: function (event, func) {
+				var eventId = self.eventId++;
+				self.eventStore[event][eventId] = func;
+				return eventId;
 			},
 			removeEventListener: function (event, index) {
 				if (self.eventStore[event].hasOwnProperty(index)) {
@@ -315,13 +355,12 @@
 					return false;
 				}
 			},
-			deleteRoute: function (route) {
-				return delete self.routes[route];
+			onEvent: function (event) {
+				var deferred = new Deferred();
+				self.oneTimeEventStore[event].push(deferred);
+				return deferred.promise;
 			},
 			destroy: function () {
-				function placebo () {}
-				self.socket.onclose = placebo;
-				self.socket.onerror = placebo;
 				return self.socket.close();
 			},
 			state: function () {
