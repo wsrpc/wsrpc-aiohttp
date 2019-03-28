@@ -160,12 +160,11 @@ class WSRPCBase:
         # deserialize message
         data = message.json(loads=loads)
 
-        serial = data.get('id', -1)
+        log.debug("Response: %r", data)
+        serial = data.get('id')
         method = data.get('method')
         result = data.get('result')
         error = data.get('error')
-
-        assert serial >= 0
 
         log.debug("Acquiring lock for %s serial %s", self, serial)
         async with self._locks[serial]:
@@ -201,6 +200,9 @@ class WSRPCBase:
 
             except Exception as e:
                 log.exception(e)
+                if not serial:
+                    return
+
                 self._send(error=self._format_error(e), id=serial)
 
             finally:
@@ -298,10 +300,14 @@ class WSRPCBase:
 
         future = self._futures[serial]
 
-        send_future = self._send(id=serial, method=func, params=kwargs)
+        payload = dict(id=serial, method=func, params=kwargs)
+
+        log.debug("Sending: %r", payload)
+        send_future = self._send(**payload)
 
         log.info("Sending request #%r \"%s(%r)\" to the client.",
                  serial, func, kwargs)
+
 
         future = asyncio.ensure_future(asyncio.wait_for(
             future, self._timeout,
