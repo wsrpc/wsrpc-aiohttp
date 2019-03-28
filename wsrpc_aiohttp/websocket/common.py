@@ -308,7 +308,6 @@ class WSRPCBase:
         log.info("Sending request #%r \"%s(%r)\" to the client.",
                  serial, func, kwargs)
 
-
         future = asyncio.ensure_future(asyncio.wait_for(
             future, self._timeout,
             loop=self._loop), loop=self._loop
