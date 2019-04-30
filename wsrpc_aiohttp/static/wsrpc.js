@@ -292,8 +292,9 @@
 
 				delete self.store[data.id];
 
-				if (data.result)
+				if (data.hasOwnProperty('result')) {
 					return deferred.resolve(data.result);
+				};
 				return deferred.reject(data.error);
 			}
 
