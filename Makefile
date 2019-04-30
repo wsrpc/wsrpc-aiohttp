@@ -1,7 +1,8 @@
 VENV = env
 
 release: upload_doc
-	python3 setup.py sdist bdist_wheel upload
+	python3 setup.py sdist bdist_wheel
+	twine upload dist/*$(shell python3 setup.py --version)*
 
 build_js:
 	(cd wsrpc_aiohttp/static/ && \
