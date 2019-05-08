@@ -22,20 +22,29 @@ WSRPC aiohttp
     :alt: license
 
 
-Remote Procedure call through WebSocket between browser and tornado.
+Easy to use minimal WebSocket Remote Procedure Call library for aiohttp
+servers.
+
+See `online demo`_ and documentation_ with examples.
 
 Features
 --------
 
-* Initiating call client function from server side.
-* Calling the server method from the client.
-* Transferring any exceptions from a client side to the server side and vise versa.
-* The frontend-library are well done for usage without any modification.
-* Fully asynchronous server-side functions.
-* Thread-based websocket handler for writing fully-synchronous code (for synchronous database drivers etc.)
-* Protected server-side methods (starts with underline never will be call from clients-side directly)
-* Asynchronous connection protocol. Server or client can call multiple methods with unpredictable ordering of answers.
-* If `ujson`_ is installed messages will be serialize/deserialize with it.
+* Call server functions from the client side;
+* Call client functions from the server (for example to notify clients about
+  events);
+* Async connection protocol: both server or client are able to call several
+  functions and get responses as soon as each response would be ready in any
+  order.
+* Fully async server-side functions;
+* Transfer any exceptions from a client side to the server side and vise versa;
+* Ready-to-use frontend-library without dependencies;
+* Thread-based websocket handler for writing fully-synchronous backend code
+  (for synchronous database drivers etc.)
+* Protected server-side methods (cliens are not able to call methods, starting
+  with underline directly);
+* If `ujson`_ is installed, it would be used for message
+  serialization/deserialization speedup.
 
 
 Installation
@@ -51,114 +60,100 @@ Install ujson if you want::
     pip install ujson
 
 
+Usage
+-----
 
-Simple usage
-------------
-
-Add the backend side
+Backend code:
 
 
 .. code-block:: python
 
+    import logging
     from time import time
-    ## If you want write async tornado code import it
-    # from from wsrpc import WebSocketRoute, WebSocket, wsrpc_static
-    ## else you should use thread-base handler
-    from wsrpc import WebSocketRoute, WebSocketThreaded as WebSocket, wsrpc_static
 
-    tornado.web.Application((
-        # js static files will available as "/js/wsrpc.min.js".
-        wsrpc_static(r'/js/(.*)'),
-        # WebSocket handler. Client will connect here.
-        (r"/ws/", WebSocket),
-        # Serve other static files
-        (r'/(.*)', tornado.web.StaticFileHandler, {
-             'path': os.path.join(project_root, 'static'),
-             'default_filename': 'index.html'
-        }),
-    ))
+    import aiohttp.web
+    from wsrpc_aiohttp import WebSocketAsync, STATIC_DIR, WebSocketRoute
 
-    # This class should be call by client.
-    # Connection object will be have the instance of this class when will call route-alias.
+
+    log = logging.getLogger(__name__)
+
+
+    # This class can be called by client.
+    # Connection object will have this class instance after calling route-alias.
     class TestRoute(WebSocketRoute):
-        # This method will be executed when client will call route-alias first time.
+        # This method will be executed when client calls route-alias
+        # for the first time.
         def init(self, **kwargs):
-            # the python __init__ must be return "self". This method might return anything.
+            # Python __init__ must be return "self".
+            # This method might return anything.
             return kwargs
 
-        def getEpoch(self):
-            # this method named by camelCase because the client can call it.
+        # This method named by camelCase because the client can call it.
+        async def getEpoch(self):
+
+            # You can execute functions on the client side
+            await self.do_notify()
+
             return time()
 
-    # stateful request
-    # this is the route alias TestRoute as "test1"
-    WebSocket.ROUTES['test1'] = TestRoute
-
-    # stateless request
-    WebSocket.ROUTES['test2'] = lambda *a, **kw: True
-
-    # initialize ThreadPool. Needed when using WebSocketThreaded.
-    WebSocket.init_pool()
+        # This method calls function on the client side
+        async def do_notify(self):
+            awesome = 'Somebody executed test1.getEpoch method!'
+            await self.socket.call('notify', result=awesome)
 
 
+    app = aiohttp.web.Application()
+    app.router.add_route("*", "/ws/", WebSocketAsync)  # Websocket route
+    app.router.add_static('/js', STATIC_DIR)  # WSRPC js library
+    app.router.add_static('/', ".")  # Your static files
 
-Add the frontend side
+    # Stateful request
+    # This is the route alias TestRoute as "test1"
+    WebSocketAsync.add_route('test1', TestRoute)
+
+    # Stateless request
+    WebSocketAsync.add_route('test2', lambda *a, **kw: True)
+
+
+    if __name__ == '__main__':
+        logging.basicConfig(level=logging.DEBUG)
+        aiohttp.web.run_app(app, port=8000)
+
+
+
+Frontend code:
 
 
 .. code-block:: HTML
 
-    <script type="text/javascript" src="/js/q.min.js"></script>
     <script type="text/javascript" src="/js/wsrpc.min.js"></script>
     <script>
-        var url = ((window.location.protocol==="https):"?"wss://":"ws://") + window.location.host + '/ws/';
-        RPC = WSRPC(url, 5000);
-        RPC.addRoute('test', function (data) { return "Test called"; });
+        var url = (window.location.protocol==="https):"?"wss://":"ws://") + window.location.host + '/ws/';
+        RPC = new WSRPC(url, 8000);
+
+        // Configure client API, that can be called from server
+        RPC.addRoute('notify', function (data) {
+            console.log('Server called client route "notify":', data);
+            return data.result;
+        });
         RPC.connect();
 
+        // Call stateful route
+        // After you call that route, server would execute 'notify' route on the
+        // client, that is registered above.
         RPC.call('test1.getEpoch').then(function (data) {
-            console.log(data);
+            console.log('Result for calling server route "test1.getEpoch": ', data);
         }, function (error) {
             alert(error);
-        }).done();
+        });
 
-        RPC.call('test2').then(function (data) { console.log(data); }).done();
+        // Call stateless method
+        RPC.call('test2').then(function (data) {
+            console.log('Result for calling server route "test2"', data);
+        });
     </script>
 
-Reverse call from Server to Client
-----------------------------------
-backend:
 
-.. code-block:: python
-
-        def do_notify(self):
-            awesome = 'Notification for you!'
-            yield self.socket.call('notify', result=awesome)
-
-frontend:
-
-.. code-block:: HTML
-
-    <script>
-        var url = (window.location.protocol==="https:"?"wss://":"ws://") + window.location.host + '/ws/';
-        RPC = WSRPC(url, 5000);
-        RPC.addRoute('notify', function (data) { return data.result; });
-        RPC.connect();
-    </script>
-
-Documentation
-+++++++++++++
-
-All available `documentation here`_.
-
-
-.. _documentation here: https://docs.wsrpc.info/
-
-
-Example
-+++++++
-
-Example running there demo_.
-
-
-.. _demo: https://demo.wsrpc.info/
+.. _online demo: https://demo.wsrpc.info/
+.. _documentation: https://docs.wsrpc.info/
 .. _ujson: https://pypi.python.org/pypi/ujson
