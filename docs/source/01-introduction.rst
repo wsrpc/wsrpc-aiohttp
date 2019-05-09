@@ -100,7 +100,7 @@ Javascript client code:
 
 .. code-block:: javascript
 
-    RPC = WSRPC("ws://127.0.0.1:8000/ws/");
+    RPC = new WSRPC("ws://127.0.0.1:8000/ws/");
     RPC.connect();
 
     RPC.call('kw.set', {'key': 'foo', 'value': 'bar'}).then(function (result) {
