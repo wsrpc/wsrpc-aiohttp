@@ -5,10 +5,17 @@ release: upload_doc
 	twine upload dist/*$(shell python3 setup.py --version)*
 
 build_js:
-	(cd wsrpc_aiohttp/static/ && \
-			npx typescript --strict wsrpc.d.ts && \
-			npx uglify-js -c --source-map --overwrite -o wsrpc.min.js wsrpc.js \
-	)
+	rm -fr build/js || true
+	mkdir -p build/js/dist
+	pandoc -s -w markdown --toc README.rst -o build/js/README.md
+
+	cp -va wsrpc_aiohttp/static/* build/js/
+	cp -va package.json build/js/
+
+	npx rollup -c rollup.config.js
+	(cd build/js && \
+		npx typescript --strict wsrpc.d.ts && \
+		npx uglify-js -c --source-map --in-source-map dist/wsrpc.js.map --overwrite -o dist/wsrpc.min.js dist/wsrpc.js)
 
 build_doc:
 	make -C docs/ html
@@ -23,10 +30,5 @@ develop:
 	$(VENV)/bin/pip install -Ue ".[develop]"
 
 npm_release: build_js
-	rm -fr build/js || true
-	mkdir -p build/js
-	pandoc -s -w markdown --toc README.rst -o build/js/README.md
-	cp -va wsrpc_aiohttp/static/* build/js/
-	cp -va package.json build/js/
 	cd build/js && npm publish
 	rm -fr build/js || true
