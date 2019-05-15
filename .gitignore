@@ -140,3 +140,6 @@ README.md
 
 *.min.js
 *.min.js.map
+
+node_modules/
+package-lock.json
