@@ -1,9 +1,9 @@
 {
   "name": "wsrpc-python",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "WebSocket based JSONRPC client",
   "main": "dist/wsrpc.min.js",
-  "module": "wsrpc.js",
+  "module": "wsrpc.es6.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wsrpc/wsrpc-aiohttp.git"

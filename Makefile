@@ -30,7 +30,7 @@ build_js:
 			.browserslistrc \
 	)
 
-	cp build/js/dist/*.min.* wsrpc_aiohttp/static
+	cp build/js/dist/*.* wsrpc_aiohttp/static
 
 build_doc:
 	make -C docs/ html

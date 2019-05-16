@@ -3,7 +3,7 @@ import babel from 'rollup-plugin-babel';
 
 export default [
 	Object.freeze({
-		input: 'wsrpc.js',
+		input: 'wsrpc.es6.js',
 		output: {
 			file: 'dist/wsrpc.js',
 			name: 'WSRPC',
