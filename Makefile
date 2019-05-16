@@ -9,20 +9,28 @@ build_js:
 	mkdir -p build/js/dist
 	pandoc -s -w markdown --toc README.rst -o build/js/README.md
 
-	cp -va wsrpc_aiohttp/static/* build/js/
-	cp -va package.json build/js/
-	cp -va rollup.config.js build/js/
-	cp -va .browserslistrc build/js/
+	cp -va \
+		wsrpc_aiohttp/static/* \
+		package.json \
+		rollup.config.js \
+		.browserslistrc \
+		build/js/
 
 	(cd build/js && \
 		npm i && \
-		npx rollup -c rollup.config.js && \
 		npx typescript --strict wsrpc.d.ts && \
+		npx rollup -c rollup.config.js && \
 		npx uglify-js \
 			-c --source-map --in-source-map dist/wsrpc.js.map \
 			--overwrite -o dist/wsrpc.min.js dist/wsrpc.js && \
-		rm -fr node_modules rollup.config.js package-lock.json \
+		rm -fr \
+			node_modules \
+			rollup.config.js \
+			package-lock.json \
+			.browserslistrc \
 	)
+
+	cp build/js/dist/*.min.* wsrpc_aiohttp/static
 
 build_doc:
 	make -C docs/ html
