@@ -63,7 +63,7 @@ You may want to install *optional* `ujson`_ library to speedup message serializa
     pip install ujson
 
 
-For javascript applications you can install `standalone js client library`_
+Python module provides client js library out of the box. But for pure javascript applications you can install `standalone js client library`_
 using npm::
 
     npm install wsrpc-python
