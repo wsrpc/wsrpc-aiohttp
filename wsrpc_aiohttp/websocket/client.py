@@ -68,7 +68,7 @@ class WSRPCClient(WSRPCBase):
                 raise aiohttp.ClientConnectionError('Connection was closed.')
 
             return await self.socket.send_json(kwargs, dumps=lambda x: dumps(x))
-        except aiohttp.WebSocketError as ex:
+        except aiohttp.WebSocketError:
             self._loop.create_task(self.close())
             raise
 
