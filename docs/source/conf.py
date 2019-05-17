@@ -24,11 +24,15 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(os.path.dirname('__file__')))
 
-PROJECT_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..'))
+PROJECT_PATH = os.path.abspath(
+    os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..')
+)
 DOC_PATH = os.path.join(PROJECT_PATH, 'docs')
 
-version_module = SourceFileLoader("version", os.path.join(PROJECT_PATH, "wsrpc_aiohttp", "version.py")).load_module()
-
+version_module = SourceFileLoader(
+    "version",
+    os.path.join(PROJECT_PATH, "wsrpc_aiohttp", "version.py")
+).load_module()
 
 autoclass_content = 'both'
 
@@ -185,8 +189,6 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-
-
 # -- Options for Epub output ----------------------------------------------
 
 # Bibliographic Dublin Core info.
@@ -207,6 +209,4 @@ epub_copyright = copyright
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
-
-#html_logo = 'logo.png'
 html_favicon = 'icon.png'

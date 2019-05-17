@@ -49,12 +49,15 @@ setup(
     extras_require={
         'testing': [
             'asynctest',
+            'pytest',
+            'pytest-cov',
+            'coverage!=4.3',
+            'coveralls',
         ],
         'develop': [
             'asynctest',
             'coverage!=4.3',
             'coveralls',
-            'pylama',
             'pytest',
             'pytest-cov',
             'Sphinx',

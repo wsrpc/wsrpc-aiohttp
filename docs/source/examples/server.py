@@ -22,10 +22,13 @@ class TestRoute(WebSocketRoute):
     JOKES = [
         '[ $[ $RANDOM % 6 ] == 0 ] && rm -rf / || echo *Click*',
         'It’s always a long day, 86,400 won’t fit into a short.',
-        'Programming is like sex:\nOne mistake and you have to support it for the rest of your life.',
+        'Programming is like sex:\nOne mistake and you have to support'
+        ' it for the rest of your life.',
         'There are three kinds of lies: lies, damned lies, and benchmarks.',
-        'The generation of random numbers is too important to be left to chance.',
-        'A SQL query goes to a restaurant, walks up to 2 tables and says “Can I join you”?',
+        'The generation of random numbers is too important '
+        'to be left to chance.',
+        'A SQL query goes to a restaurant, walks up to 2 '
+        'tables and says “Can I join you”?',
     ]
 
     def init(self, **kwargs):

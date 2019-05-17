@@ -11,7 +11,6 @@ async def sleep(socket):
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
 
-
     async def main():
         client = WSRPCClient("ws://127.0.0.1:8000/ws/", loop=loop)
         client.add_route('test', sleep)
@@ -21,6 +20,5 @@ if __name__ == '__main__':
         print(await client.call("test"))
 
         await client.close()
-
 
     loop.run_until_complete(main())

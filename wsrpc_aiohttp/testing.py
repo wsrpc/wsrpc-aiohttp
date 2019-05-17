@@ -13,7 +13,7 @@ from .websocket.client import WSRPCClient
 
 try:
     DEFAULT_TIMEOUT = int(os.getenv('ASYNC_TIMEOUT', '5'))
-except:
+except Exception:
     DEFAULT_TIMEOUT = 5
 
 
