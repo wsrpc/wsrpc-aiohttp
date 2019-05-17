@@ -1,9 +1,9 @@
 WSRPC aiohttp
 =============
 
-.. image:: https://travis-ci.org/wsrpc/wsrpc-aiohttp.svg?branch=master
-    :target: https://travis-ci.org/wsrpc/wsrpc-aiohttp
-    :alt: Travis CI
+.. image:: https://cloud.drone.io/api/badges/wsrpc/wsrpc-aiohttp/status.svg
+    :target: https://cloud.drone.io/wsrpc/wsrpc-aiohttp
+    :alt: Drone CI
 
 .. image:: https://coveralls.io/repos/github/wsrpc/wsrpc-aiohttp/badge.svg?branch=master
     :target: https://coveralls.io/github/wsrpc/wsrpc-aiohttp?branch=master

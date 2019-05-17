@@ -17,16 +17,15 @@ class WSRPCClient(WSRPCBase):
     """ WSRPC Client class """
 
     def __init__(self, endpoint: Union[URL, str], loop=None, timeout=None,
-                 session: aiohttp.ClientSession=None, **kwargs):
+                 session: aiohttp.ClientSession = None, **kwargs):
 
-        WSRPCBase.__init__(self, loop=loop)
+        WSRPCBase.__init__(self, loop=loop, timeout=timeout)
         self._url = URL(str(endpoint))
         self._session = session or aiohttp.ClientSession(
             loop=self._loop, **kwargs
         )
 
-        self._timeout = timeout
-        self.socket = None
+        self.socket = None      # type: aiohttp.ClientWebSocketResponse
         self.closed = False
 
     async def close(self):
@@ -57,25 +56,21 @@ class WSRPCClient(WSRPCBase):
                 self._loop.create_task(self.close())
                 break
 
-    def _send(self, **kwargs):
+    async def _send(self, **kwargs):
         try:
             log.debug(
                 "Sending message to %s serial %s: %s",
-                self._url,
-                Lazy(lambda: kwargs.get('id')),
+                self._url, Lazy(lambda: kwargs.get('id')),
                 Lazy(lambda: kwargs),
-              )
+            )
 
             if self.socket.closed:
                 raise aiohttp.ClientConnectionError('Connection was closed.')
 
-            send_coro = self.socket.send_json(kwargs, dumps=lambda x: dumps(x))
-            return self._loop.create_task(send_coro)
+            return await self.socket.send_json(kwargs, dumps=lambda x: dumps(x))
         except aiohttp.WebSocketError as ex:
             self._loop.create_task(self.close())
-            future = self._loop.create_future()
-            future.set_exception(ex)
-            return future
+            raise
 
     async def _executor(self, func):
         """ Method which implements execution of the client functions """

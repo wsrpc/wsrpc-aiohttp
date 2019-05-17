@@ -1,3 +1,4 @@
+import asyncio
 import concurrent
 import uuid
 
@@ -72,10 +73,10 @@ class TestServerRPC(BaseTestCase):
 
         self.WebSocketHandler.add_route('will_sleep_for', will_sleep_for)
 
-        client = await self.get_ws_client(timeout=5)
+        client = await self.get_ws_client(timeout=2)
 
-        response = await client.proxy.will_sleep_for(seconds=3)
+        response = await client.proxy.will_sleep_for(seconds=1)
         self.assertEqual(response, DATA_TO_RETURN)
 
-        with self.assertRaises(concurrent.futures._base.CancelledError):
+        with self.assertRaises(asyncio.CancelledError):
             await client.proxy.will_sleep_for(seconds=7)

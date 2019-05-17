@@ -63,12 +63,12 @@ class WSRPCBase:
     __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks',
                  '_futures', '_serial', '_timeout')
 
-    def __init__(self, loop: asyncio.AbstractEventLoop=None):
+    def __init__(self, loop: asyncio.AbstractEventLoop = None, timeout=None):
         self._loop = loop or asyncio.get_event_loop()
         self._handlers = {}
         self._pending_tasks = set()
         self._serial = 0
-        self._timeout = None
+        self._timeout = timeout
         self._locks = defaultdict(partial(asyncio.Lock, loop=self._loop))
         self._futures = defaultdict(self._loop.create_future)
 
@@ -189,7 +189,7 @@ class WSRPCBase:
                         partial(callee, *args, **kwargs)
                     )
 
-                    self._send(result=result, id=serial)
+                    await self._send(result=result, id=serial)
                 elif 'result' in data:
                     cb = self._futures.pop(serial, None)
                     cb.set_result(result)
@@ -200,10 +200,11 @@ class WSRPCBase:
 
             except Exception as e:
                 log.exception(e)
+
                 if not serial:
                     return
 
-                self._send(error=self._format_error(e), id=serial)
+                await self._send(error=self._format_error(e), id=serial)
 
             finally:
                 def clean_lock():
@@ -218,7 +219,7 @@ class WSRPCBase:
                 self._call_later(self._CLEAN_LOCK_TIMEOUT, clean_lock)
 
     @abc.abstractstaticmethod
-    def _send(self, **kwargs):
+    async def _send(self, **kwargs):
         raise NotImplementedError
 
     @staticmethod
@@ -271,7 +272,7 @@ class WSRPCBase:
         self._serial += 2
         return self._serial
 
-    def call(self, func: str, **kwargs):
+    async def call(self, func: str, **kwargs):
         """ Method for call remote function
 
         Remote methods allows only kwargs as arguments.
@@ -302,23 +303,13 @@ class WSRPCBase:
 
         payload = dict(id=serial, method=func, params=kwargs)
 
-        log.debug("Sending: %r", payload)
-        send_future = self._send(**payload)
-
-        log.info("Sending request #%r \"%s(%r)\" to the client.",
-                 serial, func, kwargs)
-
-        future = asyncio.ensure_future(asyncio.wait_for(
-            future, self._timeout,
-            loop=self._loop), loop=self._loop
+        log.info(
+            "Sending request #%r \"%s(%r)\" to the client.",
+            serial, func, kwargs,
         )
 
-        def propagate_exception(f):
-            if f.exception():
-                future.set_exception(f.exception())
-        if send_future:
-            send_future.add_done_callback(propagate_exception)
-        return future
+        await self._send(**payload)
+        return await asyncio.wait_for(future, self._timeout, loop=self._loop)
 
     @classmethod
     def add_route(cls, route: str, handler: Union[WebSocketRoute, Callable]):

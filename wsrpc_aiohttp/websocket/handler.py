@@ -22,26 +22,27 @@ class WebSocketBase(WSRPCBase, AbstractView):
     __slots__ = ('_request', 'socket', 'id', '__pending_tasks',
                  '__handlers', 'store', 'serial', '_ping', 'protocol_version')
 
-    _KEEPALIVE_PING_TIMEOUT = 30
-    _CLIENT_TIMEOUT = int(_KEEPALIVE_PING_TIMEOUT / 3)
-    _MAX_CONCURRENT_REQUESTS = 25
+    KEEPALIVE_PING_TIMEOUT = 30        # type: int
+    CLIENT_TIMEOUT = int(KEEPALIVE_PING_TIMEOUT / 3)    # type: int
+    MAX_CONCURRENT_REQUESTS = 25       # type: int
+    REQUEST_EXECUTION_TIMEOUT = None   # type: int
 
     def __init__(self, request):
         AbstractView.__init__(self, request)
-        WSRPCBase.__init__(self)
+        WSRPCBase.__init__(self, timeout=self.REQUEST_EXECUTION_TIMEOUT)
 
         self._ping = defaultdict(self._loop.create_future)
         self.id = uuid.uuid4()
         self.protocol_version = None
         self.serial = 0
         self.semaphore = asyncio.Semaphore(
-            self._MAX_CONCURRENT_REQUESTS, loop=self._loop
+            self.MAX_CONCURRENT_REQUESTS, loop=self._loop
         )
 
     @classmethod
-    def configure(cls, keepalive_timeout=_KEEPALIVE_PING_TIMEOUT,
-                  client_timeout=_CLIENT_TIMEOUT,
-                  max_concurrent_requests=_MAX_CONCURRENT_REQUESTS):
+    def configure(cls, keepalive_timeout=KEEPALIVE_PING_TIMEOUT,
+                  client_timeout=CLIENT_TIMEOUT,
+                  max_concurrent_requests=MAX_CONCURRENT_REQUESTS):
         """ Configures the handler class
 
         :param keepalive_timeout: sets timeout of client pong response
@@ -50,9 +51,9 @@ class WebSocketBase(WSRPCBase, AbstractView):
                                         be performed by each client
         """
 
-        cls._KEEPALIVE_PING_TIMEOUT = keepalive_timeout
-        cls._CLIENT_TIMEOUT = client_timeout
-        cls._MAX_CONCURRENT_REQUESTS = max_concurrent_requests
+        cls.KEEPALIVE_PING_TIMEOUT = keepalive_timeout
+        cls.CLIENT_TIMEOUT = client_timeout
+        cls.MAX_CONCURRENT_REQUESTS = max_concurrent_requests
 
     @asyncio.coroutine
     def __iter__(self):
@@ -114,10 +115,17 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
         loop = asyncio.get_event_loop()
 
-        for client_id, client in cls.get_clients().items():
-            loop.create_task(client.call, func, callback, **kwargs)
+        tasks = []
 
-    def _send(self, **kwargs):
+        for client in cls.get_clients().values():
+            tasks.append(loop.create_task(
+                client.call, func, callback, **kwargs
+            ))
+
+        return asyncio.wait(tasks, loop=loop,
+                            return_when=asyncio.ALL_COMPLETED)
+
+    async def _send(self, **kwargs):
         try:
             log.debug(
                 "Sending message to %s serial %s: %s",
@@ -125,10 +133,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 Lazy(lambda: str(kwargs.get('id'))),
                 Lazy(lambda: str(kwargs))
               )
-            self._loop.create_task(self.socket.send_json(
-                kwargs,
-                dumps=lambda x: dumps(x)
-            ))
+            await self.socket.send_json(kwargs, dumps=lambda x: dumps(x))
         except aiohttp.WebSocketError:
             self._create_task(self.close())
 
@@ -162,7 +167,9 @@ class WebSocketBase(WSRPCBase, AbstractView):
             if self.socket.closed:
                 return
 
-            future = self.call('ping', seq=self._loop.time())
+            future = asyncio.ensure_future(
+                self.call('ping', seq=self._loop.time()), loop=self._loop
+            )
 
             def on_timeout():
                 if future.done():
@@ -170,7 +177,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 future.set_exception(TimeoutError)
 
             handle = self._loop.call_later(
-                self._KEEPALIVE_PING_TIMEOUT, on_timeout
+                self.KEEPALIVE_PING_TIMEOUT, on_timeout
             )
 
             future.add_done_callback(lambda f: handle.cancel())
@@ -196,13 +203,13 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 log.exception('Error when ping remote side.')
                 break
 
-            if delta > self._CLIENT_TIMEOUT:
+            if delta > self.CLIENT_TIMEOUT:
                 log.info('Client "%r" connection should be closed because ping '
                          'response time gather then client timeout', self)
                 self._loop.create_task(self.close())
                 break
 
-            await asyncio.sleep(self._KEEPALIVE_PING_TIMEOUT, loop=self._loop)
+            await asyncio.sleep(self.KEEPALIVE_PING_TIMEOUT, loop=self._loop)
 
 
 class WebSocketAsync(WebSocketBase):

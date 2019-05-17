@@ -1,8 +1,10 @@
 import asyncio
 import os
+import unittest.mock
 from functools import partial, wraps
 
 import aiohttp.web
+import asynctest
 from asynctest import TestCase
 from aiohttp.test_utils import TestClient, TestServer
 from yarl import URL
@@ -12,9 +14,9 @@ from .websocket.client import WSRPCClient
 
 
 try:
-    DEFAULT_TIMEOUT = int(os.getenv('ASYNC_TIMEOUT', '5'))
+    DEFAULT_TIMEOUT = int(os.getenv('ASYNC_TIMEOUT', '3'))
 except Exception:
-    DEFAULT_TIMEOUT = 5
+    DEFAULT_TIMEOUT = 3
 
 
 def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
@@ -76,7 +78,40 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
     return wrap
 
 
-class BaseTestCase(TestCase):
+class AsyncTestCase(asynctest.TestCase):
+    use_default_loop = False
+    forbid_get_event_loop = True
+
+    TEST_TIMEOUT = int(os.getenv('ASYNCIO_TEST_TIMEOUT', '30'))
+
+    def _run_test_method(self, method):
+        result = method()
+        if asyncio.iscoroutine(result):
+            self.loop.run_until_complete(
+                asyncio.wait_for(result, timeout=self.TEST_TIMEOUT)
+            )
+
+    @property
+    def _all_tasks(self):
+        return getattr(asyncio, 'all_tasks', asyncio.Task.all_tasks)
+
+    async def doCleanups(self):
+        outcome = self._outcome or unittest.mock._Outcome()
+
+        while self._cleanups:
+            function, args, kwargs = self._cleanups.pop()
+            with outcome.testPartExecutor(self):
+                if asyncio.iscoroutinefunction(function):
+                    await self.loop.create_task(function(*args, **kwargs))
+                elif asyncio.iscoroutine(function):
+                    await function
+                else:
+                    function(*args, **kwargs)
+
+        return outcome.success
+
+
+class BaseTestCase(AsyncTestCase):
     WebSocketHandler = WebSocketAsync
 
     async def get_application(self):

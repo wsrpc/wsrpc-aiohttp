@@ -13,7 +13,8 @@ class TestDisconnect(BaseTestCase):
 
         client = await self.get_ws_client()
 
-        await self.http_client.server.close()
+        # Imitation of server connection has been closed
+        client.socket._closed = True
 
         with self.assertRaises(ClientConnectionError):
-            await client.proxy.get_data()
+            await client.call('get_data')
