@@ -87,3 +87,8 @@ steps:
 volumes:
   - name: cache
     temp: {}
+---
+kind: signature
+hmac: 243d09591fc4bfb4b725a1f3236ccc93e0c201138507f322b9533a99e923b5eb
+
+...
