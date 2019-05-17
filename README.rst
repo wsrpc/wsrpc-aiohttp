@@ -1,9 +1,13 @@
 WSRPC aiohttp
 =============
 
-.. image:: https://travis-ci.org/wsrpc/wsrpc-aiohttp.svg
+.. image:: https://travis-ci.org/wsrpc/wsrpc-aiohttp.svg?branch=master
     :target: https://travis-ci.org/wsrpc/wsrpc-aiohttp
     :alt: Travis CI
+
+.. image:: https://coveralls.io/repos/github/wsrpc/wsrpc-aiohttp/badge.svg?branch=master
+    :target: https://coveralls.io/github/wsrpc/wsrpc-aiohttp?branch=master
+    :alt: Coveralls
 
 .. image:: https://img.shields.io/pypi/v/wsrpc-aiohttp.svg
     :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
@@ -20,6 +24,7 @@ WSRPC aiohttp
 .. image:: https://img.shields.io/pypi/l/wsrpc-aiohttp.svg
     :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
     :alt: license
+
 
 
 Easy to use minimal WebSocket Remote Procedure Call library for aiohttp
@@ -43,8 +48,6 @@ Features
   (for synchronous database drivers etc.)
 * Protected server-side methods (cliens are not able to call methods, starting
   with underline directly);
-* If `ujson`_ is installed, it would be used for message
-  serialization/deserialization speedup.
 
 
 Installation
@@ -55,10 +58,15 @@ Install via pip::
     pip install wsrpc-aiohttp
 
 
-Install ujson if you want::
+You may want to install *optional* `ujson`_ library to speedup message serialization/deserialization::
 
     pip install ujson
 
+
+For javascript applications you can install `standalone js client library`_
+using npm::
+
+    npm install wsrpc-python
 
 Usage
 -----
@@ -154,6 +162,14 @@ Frontend code:
     </script>
 
 
+Versioning
+----------
+
+This software follows `Semantic Versioning`_
+
+
 .. _online demo: https://demo.wsrpc.info/
 .. _documentation: https://docs.wsrpc.info/
 .. _ujson: https://pypi.python.org/pypi/ujson
+.. _standalone js client library: https://www.npmjs.com/package/wsrpc-python
+.. _Semantic Versioning: http://semver.org/
