@@ -171,5 +171,5 @@ This software follows `Semantic Versioning`_
 .. _online demo: https://demo.wsrpc.info/
 .. _documentation: https://docs.wsrpc.info/
 .. _ujson: https://pypi.python.org/pypi/ujson
-.. _standalone js client library: https://www.npmjs.com/package/wsrpc-python
+.. _standalone js client library: https://www.npmjs.com/package/@wsrpc/client
 .. _Semantic Versioning: http://semver.org/
