@@ -1,49 +1,33 @@
 VENV = env
 
-release: upload_doc build_js
+sdist:
 	python3 setup.py sdist bdist_wheel
+
+release: sdist upload_doc build_js
 	twine upload dist/*$(shell python3 setup.py --version)*
 
 build_js:
-	rm -fr build/js || true
-	mkdir -p build/js/dist
-	pandoc -s -w markdown --toc README.rst -o build/js/README.md
+	for fname in wsrpc.d.ts wsrpc.es6.js; do \
+		curl --compressed -L \
+			https://unpkg.com/@wsrpc/client/$$fname \
+			-o wsrpc_aiohttp/static/$$fname ;\
+	done
 
-	cp -va \
-		wsrpc_aiohttp/static/* \
-		package.json \
-		rollup.config.js \
-		.browserslistrc \
-		build/js/
-
-	(cd build/js && \
-		npm i && \
-		npx typescript --strict wsrpc.d.ts && \
-		npx rollup -c rollup.config.js && \
-		npx uglify-js \
-			-c --source-map --in-source-map dist/wsrpc.js.map \
-			--overwrite -o dist/wsrpc.min.js dist/wsrpc.js && \
-		rm -fr \
-			node_modules \
-			rollup.config.js \
-			package-lock.json \
-			.browserslistrc \
-	)
-
-	cp build/js/dist/*.* wsrpc_aiohttp/static
+	for fname in wsrpc.js wsrpc.min.js wsrpc.min.js.map; do \
+		curl --compressed -L \
+			https://unpkg.com/@wsrpc/client/dist/$$fname \
+			-o wsrpc_aiohttp/static/$$fname ;\
+	done
 
 build_doc:
 	make -C docs/ html
 
 upload_doc: build_doc
-	rsync -zav --delete docs/build/html/ root@wsrpc.info:/home/site-wsrpc/wsrpc-aiohttp-doc/
+	rsync -zav --delete docs/build/html/ \
+		root@wsrpc.info:/home/site-wsrpc/wsrpc-aiohttp-doc/
 
 doc: upload_doc
 
 develop:
 	virtualenv $(VENV)
 	$(VENV)/bin/pip install -Ue ".[develop]"
-
-npm_release: build_js
-	cd build/js && npm publish
-	rm -fr build/js || true

@@ -143,3 +143,5 @@ README.md
 
 node_modules/
 package-lock.json
+/wsrpc_aiohttp/static/*
+/.mypy*
