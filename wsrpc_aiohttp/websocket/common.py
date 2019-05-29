@@ -203,6 +203,10 @@ class WSRPCBase:
 
         log.debug("Response: %r", data)
         serial = data.get('id')
+
+        if serial is None:
+            return await self.handle_event(data)
+
         method = data.get('method')
         result = data.get('result')
         error = data.get('error')
@@ -210,19 +214,17 @@ class WSRPCBase:
         log.debug("Acquiring lock for %s serial %s", self, serial)
         async with self._locks[serial]:
             try:
-                if serial is None:
-                    await self.handle_event(data)
-                elif 'method' in data:
+                if 'method' in data:
                     args, kwargs = self.prepare_args(
                         data.get('params', None)
                     )
-                    await self.handle_method(
+                    return await self.handle_method(
                         method, serial, *args, **kwargs
                     )
                 elif 'result' in data:
-                    await self.handle_result(serial, result)
+                    return await self.handle_result(serial, result)
                 elif 'error' in data:
-                    await self.handle_error(serial, error)
+                    return await self.handle_error(serial, error)
 
             except Exception as e:
                 log.exception(e)
