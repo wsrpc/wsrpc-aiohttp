@@ -5,7 +5,7 @@ from functools import partial
 
 import asyncio
 import logging
-from typing import Union, Callable, Any, Dict
+from typing import Union, Callable, Any, Dict, Tuple
 
 import aiohttp
 
@@ -140,12 +140,13 @@ class WSRPCBase:
         return self.get_clients()
 
     @staticmethod
-    def _prepare_args(args):
+    async def prepare_args(data) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+        args = data.get('params', {})
         arguments = []
         kwargs = {}
 
         if isinstance(args, type(None)):
-            return arguments, kwargs
+            return tuple(arguments), kwargs
 
         if isinstance(args, list):
             arguments.extend(args)
@@ -154,71 +155,72 @@ class WSRPCBase:
         else:
             arguments.append(args)
 
-        return arguments, kwargs
+        return tuple(arguments), kwargs
+
+    async def handle_method(self, data: dict):
+        args, kwargs = await self.prepare_args(data)
+
+        callee = self.resolver(data.get('method'))
+        calee_is_route = (
+            hasattr(callee, '__self__') and
+            isinstance(callee.__self__, WebSocketRoute)
+        )
+
+        if not calee_is_route:
+            a = [self]
+            a.extend(args)
+            args = a
+
+        result = await self._executor(partial(callee, *args, **kwargs))
+
+        await self._send(result=result, id=data.get('id'))
+
+    async def handle_result(self, data: dict):
+        cb = self._futures.pop(data['serial'], None)
+        cb.set_result(data['result'])
+
+    async def handle_error(self, data: dict):
+        error = data.get('error')
+        self._reject(data['serial'], error)
+        log.error('Client return error: \n\t%r', error)
+
+    def __lock_cleaner(self, serial):
+        if serial not in self._locks:
+            return
+
+        log.debug("Release and delete lock for %s serial %s", self, serial)
+        self._locks.pop(serial)
+
+    def _clean_lock(self, serial):
+        self._call_later(self._CLEAN_LOCK_TIMEOUT, self.__lock_cleaner, serial)
 
     async def on_message(self, message: aiohttp.WSMessage):
         # deserialize message
-        data = message.json(loads=loads)
+        # noinspection PyNoneFunctionAssignment,PyTypeChecker
+        data = message.json(loads=loads)    # type: dict
 
-        log.debug("Response: %r", data)
+        log.debug("Got message: %r", data)
         serial = data.get('id')
-        method = data.get('method')
-        result = data.get('result')
-        error = data.get('error')
 
         log.debug("Acquiring lock for %s serial %s", self, serial)
         async with self._locks[serial]:
             try:
                 if 'method' in data:
-                    args, kwargs = self._prepare_args(
-                        data.get('params', None)
-                    )
-
-                    callee = self.resolver(method)
-                    calee_is_route = (
-                        hasattr(callee, '__self__') and
-                        isinstance(callee.__self__, WebSocketRoute)
-                    )
-
-                    if not calee_is_route:
-                        a = [self]
-                        a.extend(args)
-                        args = a
-
-                    result = await self._executor(
-                        partial(callee, *args, **kwargs)
-                    )
-
-                    await self._send(result=result, id=serial)
+                    return await self.handle_method(data)
                 elif 'result' in data:
-                    cb = self._futures.pop(serial, None)
-                    cb.set_result(result)
-
+                    return await self.handle_result(data)
                 elif 'error' in data:
-                    self._reject(serial, error)
-                    log.error('Client return error: \n\t%r', error)
-
+                    return await self.handle_error(data)
             except Exception as e:
                 log.exception(e)
 
-                if not serial:
-                    return
-
-                await self._send(error=self._format_error(e), id=serial)
+                if serial:
+                    await self._send(error=self._format_error(e), id=serial)
 
             finally:
-                def clean_lock():
-                    log.debug(
-                        "Release and delete lock for %s serial %s",
-                        self, serial
-                    )
+                self._clean_lock(serial)
 
-                    if serial in self._locks:
-                        self._locks.pop(serial)
-
-                self._call_later(self._CLEAN_LOCK_TIMEOUT, clean_lock)
-
-    @abc.abstractstaticmethod
+    @abc.abstractmethod
     async def _send(self, **kwargs):
         raise NotImplementedError
 
