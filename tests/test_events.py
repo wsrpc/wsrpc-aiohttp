@@ -21,4 +21,3 @@ class TestServerEvents(BaseTestCase):
         result = await future
 
         self.assertDictEqual(result, {"Hello": "world"})
-
