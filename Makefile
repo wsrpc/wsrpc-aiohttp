@@ -3,7 +3,7 @@ VENV = env
 sdist:
 	python3 setup.py sdist bdist_wheel
 
-release: sdist upload_doc build_js
+release: build_js sdist upload_doc
 	twine upload dist/*$(shell python3 setup.py --version)*
 
 build_js:
