@@ -76,5 +76,16 @@ class WSRPCClient(WSRPCBase):
         """ Method which implements execution of the client functions """
         return await asyncio.coroutine(func)()
 
+    async def __aenter__(self):
+        if self.socket is None:
+            await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.closed:
+            return
+
+        await self.close()
+
 
 __all__ = 'WSRPCClient',
