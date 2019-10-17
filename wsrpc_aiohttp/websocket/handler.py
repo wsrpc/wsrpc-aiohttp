@@ -174,6 +174,11 @@ class WebSocketBase(WSRPCBase, AbstractView):
             def on_timeout():
                 if future.done():
                     return
+
+                if isinstance(future, asyncio.Task):
+                    future.cancel()
+                    return
+
                 future.set_exception(TimeoutError)
 
             handle = self._loop.call_later(
