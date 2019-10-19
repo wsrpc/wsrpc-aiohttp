@@ -180,6 +180,8 @@ class WSRPCBase:
 
     async def handle_result(self, serial, result):
         cb = self._futures.pop(serial, None)
+        if not cb or cb.done():
+            return
         cb.set_result(result)
 
     async def handle_error(self, serial, error):
