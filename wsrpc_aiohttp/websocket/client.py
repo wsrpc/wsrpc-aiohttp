@@ -3,12 +3,10 @@ from typing import Union
 import aiohttp
 import logging
 
-import asyncio
 from yarl import URL
 
 from .tools import Lazy, dumps
-from .common import WSRPCBase
-
+from .common import WSRPCBase, awaitable
 
 log = logging.getLogger(__name__)
 
