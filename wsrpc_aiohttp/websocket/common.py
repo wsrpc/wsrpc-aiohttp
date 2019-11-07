@@ -1,11 +1,12 @@
 import abc
 import types
 from collections import defaultdict
+from enum import IntEnum
 from functools import partial, wraps
 
 import asyncio
 import logging
-from typing import Union, Callable, Any, Dict
+from typing import Union, Callable, Any, Dict, Mapping
 
 import aiohttp
 
@@ -27,6 +28,7 @@ def ping(obj, **kwargs):
 
 log = logging.getLogger(__name__)
 RouteType = Union[Callable[['WSRPCBase', Any], Any], WebSocketRoute]
+FrameMappingItemType = Mapping[IntEnum, Callable[[aiohttp.WSMessage], Any]]
 
 
 def awaitable(func):
@@ -93,7 +95,10 @@ class WSRPCBase:
         self._locks = defaultdict(asyncio.Lock)
         self._futures = defaultdict(self._loop.create_future)
         self._event_listeners = set()
-        self._message_type_mapping = types.MappingProxyType({
+        self._message_type_mapping = self._create_type_mapping()
+
+    def _create_type_mapping(self) -> FrameMappingItemType:
+        return types.MappingProxyType({
             aiohttp.WSMsgType.TEXT: self.handle_message,
             aiohttp.WSMsgType.BINARY: self.handle_binary,
             aiohttp.WSMsgType.CLOSE: self.close,
