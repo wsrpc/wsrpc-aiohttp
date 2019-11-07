@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from binascii import hexlify
 
 import aiohttp.web
 import asyncio
@@ -13,7 +14,16 @@ app = aiohttp.web.Application(loop=loop)
 log = logging.getLogger(__name__)
 
 
-app.router.add_route("*", "/ws/", WebSocketAsync)
+class WebSocket(WebSocketAsync):
+    async def handle_binary(self, message: aiohttp.WSMessage):
+        await self.proxy.print(
+            type=message.type,
+            hex=hexlify(message.data).decode(),
+            message="Got binary data",
+        )
+
+
+app.router.add_route("*", "/ws/", WebSocket)
 app.router.add_static('/js', STATIC_DIR)
 app.router.add_static('/', os.path.dirname(os.path.abspath(__file__)))
 
@@ -61,7 +71,7 @@ class TestRoute(WebSocketRoute):
         return 'Cool' if result else 'Hmm.. Try again.'
 
 
-WebSocketAsync.add_route('test', TestRoute)
+WebSocket.add_route('test', TestRoute)
 
 
 if __name__ == '__main__':

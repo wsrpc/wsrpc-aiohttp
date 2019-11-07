@@ -48,7 +48,7 @@ class WSRPCClient(WSRPCBase):
     async def __handle_connection(self):
         while True:
             async for message in self.socket:    # type: aiohttp.WSMessage
-                await self._handle_message(message)
+                await self._on_message(message)
             else:
                 log.info('Connection was closed')
                 self._loop.create_task(self.close())

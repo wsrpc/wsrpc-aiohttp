@@ -110,8 +110,7 @@
 
     var examplesContainer = document.getElementById('examples');
 
-    for (var func in examples) {
-        var args = examples[func];
+	function createExampleButton(func, args) {
         var btn = document.createElement('button');
         btn.setAttribute('class', 'example');
         btn.func = func;
@@ -121,8 +120,24 @@
             document.getElementById('func').setAttribute('value', this.func);
             document.getElementById('args').setAttribute('value', this.args);
         };
-        examplesContainer.appendChild(btn);
+        return btn;
+	}
+
+    for (var func in examples) {
+		examplesContainer.appendChild(
+		    createExampleButton(func, examples[func])
+		);
     }
+
+	var binaryBtn = createExampleButton('binary', '');
+
+	binaryBtn.onclick = function () {
+		RPC.sendRaw(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 0]));
+		alert("Binary data sent");
+    }
+
+    examplesContainer.appendChild(binaryBtn);
+
 </script>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">

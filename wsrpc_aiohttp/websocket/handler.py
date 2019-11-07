@@ -86,7 +86,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
             async for msg in self.socket:
                 try:
-                    await self._handle_message(msg)
+                    await self._on_message(msg)
                 except WebSocketError:
                     log.error('Client connection %s closed with exception %s',
                               self.id, self.socket.exception())

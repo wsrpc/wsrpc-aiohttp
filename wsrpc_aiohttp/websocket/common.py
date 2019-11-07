@@ -81,7 +81,8 @@ class WSRPCBase:
     _CLEAN_LOCK_TIMEOUT = 2
 
     __slots__ = ('_handlers', '_loop', '_pending_tasks', '_locks',
-                 '_futures', '_serial', '_timeout', '_event_listeners')
+                 '_futures', '_serial', '_timeout', '_event_listeners',
+                 '_message_type_mapping')
 
     def __init__(self, loop: asyncio.AbstractEventLoop = None, timeout=None):
         self._loop = loop or asyncio.get_event_loop()
@@ -92,6 +93,12 @@ class WSRPCBase:
         self._locks = defaultdict(asyncio.Lock)
         self._futures = defaultdict(self._loop.create_future)
         self._event_listeners = set()
+        self._message_type_mapping = types.MappingProxyType({
+            aiohttp.WSMsgType.TEXT: self.handle_message,
+            aiohttp.WSMsgType.BINARY: self.handle_binary,
+            aiohttp.WSMsgType.CLOSE: self.close,
+            aiohttp.WSMsgType.CLOSED: self.close,
+        })
 
     def _create_task(self, coro):
         task = self._loop.create_task(coro)      # type: asyncio.Task
@@ -106,7 +113,7 @@ class WSRPCBase:
 
         self._pending_tasks.add(self._loop.call_later(timer, handler))
 
-    async def close(self):
+    async def close(self, message=None):
         """ Cancel all pending tasks """
         async def task_waiter(task):
             if not (hasattr(task, '__iter__') or hasattr(task, '__aiter__')):
@@ -121,26 +128,66 @@ class WSRPCBase:
                     "Unhandled exception when closing client connection"
                 )
 
+        if message:
+            log.info("Closing WebSocket because message %r received", message)
+
         for task in tuple(self._pending_tasks):
             task.cancel()
 
             if hasattr(task, 'cancelled') and not task.cancelled():
                 self._loop.create_task(task_waiter(task))
 
-    def _log_call(self, start: float, *args):
-        end = self._loop.time()
-        log.info(end - start)
+    async def handle_binary(self, message: aiohttp.WSMessage):
+        log.warning("Unhandled message %r %r", message.type, message.data)
 
-    async def _handle_message(self, msg: aiohttp.WSMessage):
-        if msg.type == aiohttp.WSMsgType.TEXT:
-            self._create_task(self.on_message(msg))
-        elif msg.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED):
-            self._create_task(self.close())
-        elif msg.type == aiohttp.WSMsgType.ERROR:
-            self._create_task(self.close())
-            raise aiohttp.WebSocketError(code=msg.type.value, message=msg)
-        else:
+    async def handle_message(self, message: aiohttp.WSMessage):
+        # deserialize message
+        # noinspection PyNoneFunctionAssignment, PyTypeChecker
+        data = message.json(loads=loads)  # type: dict
+
+        log.debug("Response: %r", data)
+        serial = data.get('id')
+
+        if serial is None:
+            return await self.handle_event(data)
+
+        method = data.get('method')
+        result = data.get('result')
+        error = data.get('error')
+
+        log.debug("Acquiring lock for %s serial %s", self, serial)
+        async with self._locks[serial]:
+            try:
+                if 'method' in data:
+                    args, kwargs = self.prepare_args(
+                        data.get('params', None)
+                    )
+                    return await self.handle_method(
+                        method, serial, *args, **kwargs
+                    )
+                elif 'result' in data:
+                    return await self.handle_result(serial, result)
+                elif 'error' in data:
+                    return await self.handle_error(serial, error)
+                else:
+                    return await self.handle_result(serial, None)
+
+            except Exception as e:
+                log.exception(e)
+
+                if serial:
+                    await self._send(error=self._format_error(e), id=serial)
+            finally:
+                self._call_later(
+                    self._CLEAN_LOCK_TIMEOUT, self.__clean_lock, serial
+                )
+
+    async def _on_message(self, msg: aiohttp.WSMessage):
+        async def unknown_method(msg: aiohttp.WSMessage):
             log.warning("Unhandled message %r %r", msg.type, msg.data)
+
+        handler = self._message_type_mapping.get(msg.type, unknown_method)
+        self._create_task(awaitable(handler)(msg))
 
     @classmethod
     def get_routes(cls) -> Dict[str, RouteType]:
@@ -217,46 +264,6 @@ class WSRPCBase:
     async def handle_event(self, event):
         for listener in self._event_listeners:
             self._loop.call_soon(listener, event)
-
-    async def on_message(self, message: aiohttp.WSMessage):
-        # deserialize message
-        # noinspection PyNoneFunctionAssignment, PyTypeChecker
-        data = message.json(loads=loads)    # type: dict
-
-        log.debug("Response: %r", data)
-        serial = data.get('id')
-
-        if serial is None:
-            return await self.handle_event(data)
-
-        method = data.get('method')
-        result = data.get('result')
-        error = data.get('error')
-
-        log.debug("Acquiring lock for %s serial %s", self, serial)
-        async with self._locks[serial]:
-            try:
-                if 'method' in data:
-                    args, kwargs = self.prepare_args(
-                        data.get('params', None)
-                    )
-                    return await self.handle_method(
-                        method, serial, *args, **kwargs
-                    )
-                elif 'result' in data:
-                    return await self.handle_result(serial, result)
-                elif 'error' in data:
-                    return await self.handle_error(serial, error)
-
-            except Exception as e:
-                log.exception(e)
-
-                if serial:
-                    await self._send(error=self._format_error(e), id=serial)
-            finally:
-                self._call_later(
-                    self._CLEAN_LOCK_TIMEOUT, self.__clean_lock, serial
-                )
 
     @abc.abstractmethod
     async def _send(self, **kwargs):
