@@ -35,9 +35,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         self.id = uuid.uuid4()
         self.protocol_version = None
         self.serial = 0
-        self.semaphore = asyncio.Semaphore(
-            self.MAX_CONCURRENT_REQUESTS, loop=self._loop
-        )
+        self.semaphore = asyncio.Semaphore(self.MAX_CONCURRENT_REQUESTS)
 
     @classmethod
     def configure(cls, keepalive_timeout=KEEPALIVE_PING_TIMEOUT,
@@ -55,12 +53,8 @@ class WebSocketBase(WSRPCBase, AbstractView):
         cls.CLIENT_TIMEOUT = client_timeout
         cls.MAX_CONCURRENT_REQUESTS = max_concurrent_requests
 
-    @asyncio.coroutine
-    def __iter__(self):
-        return (yield from self.__handle_request())
-
     def __await__(self):
-        return (yield from self.__iter__())
+        return self.__handle_request().__await__()
 
     async def authorize(self) -> bool:
         """ Special method for authorize client.
@@ -76,7 +70,6 @@ class WebSocketBase(WSRPCBase, AbstractView):
             You can validate some headers (self.request.headers) or
             check cookies (self.reauest.cookies).
         """
-
         return True
 
     async def __handle_request(self):
@@ -122,8 +115,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 client.call, func, callback, **kwargs
             ))
 
-        return asyncio.wait(tasks, loop=loop,
-                            return_when=asyncio.ALL_COMPLETED)
+        return asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
     async def _send(self, **kwargs):
         try:
@@ -155,7 +147,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
             self.clients.pop(self.id)
 
         for name, obj in self._handlers.items():
-            self._loop.create_task(asyncio.coroutine(obj._onclose)())
+            self._loop.create_task(awaitable(obj._onclose)())
 
     def _log_client_list(self):
         log.debug('CLIENTS: %s', Lazy(lambda: ''.join([
@@ -168,7 +160,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 return
 
             future = asyncio.ensure_future(
-                self.call('ping', seq=self._loop.time()), loop=self._loop
+                self.call('ping', seq=self._loop.time())
             )
 
             def on_timeout():
@@ -214,7 +206,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 self._loop.create_task(self.close())
                 break
 
-            await asyncio.sleep(self.KEEPALIVE_PING_TIMEOUT, loop=self._loop)
+            await asyncio.sleep(self.KEEPALIVE_PING_TIMEOUT)
 
 
 class WebSocketAsync(WebSocketBase):

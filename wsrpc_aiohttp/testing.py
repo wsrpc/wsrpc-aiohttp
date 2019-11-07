@@ -46,35 +46,12 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
     if func is None:
         return partial(async_timeout, seconds=seconds)
 
-    # convert function to coroutine anyway
-    coro_func = awaitable(func)
-
     @wraps(func)
-    async def wrap(self: TestCase, *args, **kwargs):
-        task = self.loop.create_task(
-            coro_func(self, *args, **kwargs)
-        )  # type: asyncio.Task
-
-        cancelled = False
-
-        def on_timeout(task: asyncio.Task):
-            nonlocal cancelled
-
-            if task.done():
-                return
-
-            task.cancel()
-            cancelled = True
-
-        handle = self.loop.call_later(seconds, on_timeout, task)
-        task.add_done_callback(lambda x: handle.cancel())
-
-        try:
-            return await task
-        except asyncio.CancelledError as e:
-            if cancelled:
-                raise TimeoutError from e
-            raise
+    async def wrap(*args, **kwargs):
+        return await asyncio.wait_for(
+            awaitable(func)(*args, **kwargs),
+            timeout=seconds
+        )
 
     return wrap
 

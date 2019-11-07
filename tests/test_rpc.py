@@ -63,9 +63,8 @@ class TestServerRPC(BaseTestCase):
         response = await client.proxy.get_data()
         self.assertEqual(response, DATA_TO_RETURN)
 
-    @async_timeout
     async def test_call_timeout(self):
-
+        @async_timeout
         def will_sleep_for(_, seconds):
             time.sleep(seconds)
             return DATA_TO_RETURN
@@ -77,5 +76,5 @@ class TestServerRPC(BaseTestCase):
         response = await client.proxy.will_sleep_for(seconds=1)
         self.assertEqual(response, DATA_TO_RETURN)
 
-        with self.assertRaises(asyncio.CancelledError):
+        with self.assertRaises(asyncio.TimeoutError):
             await client.proxy.will_sleep_for(seconds=7)

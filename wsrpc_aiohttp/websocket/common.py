@@ -89,7 +89,7 @@ class WSRPCBase:
         self._pending_tasks = set()
         self._serial = 0
         self._timeout = timeout
-        self._locks = defaultdict(partial(asyncio.Lock, loop=self._loop))
+        self._locks = defaultdict(asyncio.Lock)
         self._futures = defaultdict(self._loop.create_future)
         self._event_listeners = set()
 
@@ -102,7 +102,7 @@ class WSRPCBase:
 
     def _call_later(self, timer, callback, *args, **kwargs):
         def handler():
-            self._create_task(asyncio.coroutine(callback)(*args, **kwargs))
+            self._create_task(awaitable(callback)(*args, **kwargs))
 
         self._pending_tasks.add(self._loop.call_later(timer, handler))
 
@@ -349,7 +349,7 @@ class WSRPCBase:
         )
 
         await self._send(**payload)
-        return await asyncio.wait_for(future, self._timeout, loop=self._loop)
+        return await asyncio.wait_for(future, self._timeout)
 
     async def emit(self, event):
         await self._send(**event)
