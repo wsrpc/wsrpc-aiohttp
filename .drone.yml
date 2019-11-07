@@ -48,6 +48,18 @@ steps:
       - name: cache
         path: /drone/src/.tox
 
+  - name: python 3.8
+    image: snakepacker/python:all
+    commands:
+      - tox
+    environment:
+      TOXENV: py38
+      COVERALLS_REPO_TOKEN:
+        from_secret: COVERALLS_TOKEN
+    volumes:
+      - name: cache
+        path: /drone/src/.tox
+
   - name: python 3.7
     image: snakepacker/python:all
     commands:
@@ -89,6 +101,6 @@ volumes:
     temp: {}
 ---
 kind: signature
-hmac: 243d09591fc4bfb4b725a1f3236ccc93e0c201138507f322b9533a99e923b5eb
+hmac: d40f4a689dc09183626e9c6566bd1e1c8624811fa0ac503bf24864f96812b837
 
 ...
