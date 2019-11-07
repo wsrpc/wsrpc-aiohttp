@@ -8,7 +8,7 @@ import aiohttp
 from aiohttp import web, WebSocketError
 from aiohttp.abc import AbstractView
 
-from .common import WSRPCBase, ClientException
+from .common import WSRPCBase, ClientException, awaitable
 from .route import WebSocketRoute
 from .tools import Lazy, dumps
 
@@ -220,7 +220,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
 class WebSocketAsync(WebSocketBase):
     """ Handler class which execute any route as a coroutine """
     async def _executor(self, func):
-        return await asyncio.coroutine(func)()
+        return await awaitable(func)()
 
 
 class WebSocketThreaded(WebSocketBase):

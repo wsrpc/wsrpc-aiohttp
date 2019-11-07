@@ -1,7 +1,7 @@
 import abc
 import types
 from collections import defaultdict
-from functools import partial
+from functools import partial, wraps
 
 import asyncio
 import logging
@@ -27,6 +27,26 @@ def ping(obj, **kwargs):
 
 log = logging.getLogger(__name__)
 RouteType = Union[Callable[['WSRPCBase', Any], Any], WebSocketRoute]
+
+
+def awaitable(func):
+    if asyncio.iscoroutinefunction(func):
+        return func
+
+    @wraps(func)
+    async def wrap(*args, **kwargs):
+        result = func(*args, **kwargs)
+
+        is_awaitable = (
+            asyncio.iscoroutine(result) or
+            asyncio.isfuture(result) or
+            hasattr(result, '__await__')
+        )
+        if is_awaitable:
+            return await result
+        return result
+
+    return wrap
 
 
 class _ProxyMethod:

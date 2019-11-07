@@ -9,6 +9,7 @@ from asynctest import TestCase
 from aiohttp.test_utils import TestClient, TestServer
 from yarl import URL
 
+from wsrpc_aiohttp.websocket.common import awaitable
 from .websocket.handler import WebSocketAsync
 from .websocket.client import WSRPCClient
 
@@ -46,7 +47,7 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
         return partial(async_timeout, seconds=seconds)
 
     # convert function to coroutine anyway
-    coro_func = asyncio.coroutine(func)
+    coro_func = awaitable(func)
 
     @wraps(func)
     async def wrap(self: TestCase, *args, **kwargs):
@@ -56,7 +57,7 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
 
         cancelled = False
 
-        def on_timeout(task: asyncio.Task, loop: asyncio.AbstractEventLoop):
+        def on_timeout(task: asyncio.Task):
             nonlocal cancelled
 
             if task.done():
@@ -65,7 +66,7 @@ def async_timeout(func=None, seconds=DEFAULT_TIMEOUT):
             task.cancel()
             cancelled = True
 
-        handle = self.loop.call_later(seconds, on_timeout, task, self.loop)
+        handle = self.loop.call_later(seconds, on_timeout, task)
         task.add_done_callback(lambda x: handle.cancel())
 
         try:

@@ -74,7 +74,7 @@ class WSRPCClient(WSRPCBase):
 
     async def _executor(self, func):
         """ Method which implements execution of the client functions """
-        return await asyncio.coroutine(func)()
+        return await awaitable(func)()
 
     async def __aenter__(self):
         if self.socket is None:
