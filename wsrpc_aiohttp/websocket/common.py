@@ -1,17 +1,17 @@
 import abc
+import asyncio
+import logging
 import types
 from collections import defaultdict
 from enum import IntEnum
 from functools import partial, wraps
-
-import asyncio
-import logging
-from typing import Union, Callable, Any, Dict, Mapping
+from typing import Callable, Mapping, NamedTuple, Type
+from typing import Optional, Dict, List, Any, Union
 
 import aiohttp
 
-from .tools import loads
 from .route import WebSocketRoute
+from .tools import loads
 
 
 class ClientException(Exception):
@@ -73,6 +73,24 @@ class _Proxy:
 
     def __getattr__(self, item: str):
         return _ProxyMethod(self.__call, item)
+
+
+class Nothing:
+    _instance = None
+
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super(Nothing, cls).__new__(cls)
+        return cls._instance
+
+
+CallItem = NamedTuple("CallItem", (
+    ("serial", int),
+    ("method", Union[Nothing, Optional[str]]),
+    ("error", Union[Nothing, Any]),
+    ("result", Union[Nothing, Any]),
+    ("params", Optional[Union[List, Dict]]),
+))
 
 
 class WSRPCBase:
@@ -145,47 +163,67 @@ class WSRPCBase:
     async def handle_binary(self, message: aiohttp.WSMessage):
         log.warning("Unhandled message %r %r", message.type, message.data)
 
-    async def handle_message(self, message: aiohttp.WSMessage):
-        # deserialize message
-        # noinspection PyNoneFunctionAssignment, PyTypeChecker
-        data = message.json(loads=loads)  # type: dict
+    async def _call_method(self, call_item: CallItem):
+        log.debug("Acquiring lock for %s serial %s", self, call_item.serial)
 
-        log.debug("Response: %r", data)
+        try:
+            if not isinstance(call_item.method, Nothing):
+                args, kwargs = self.prepare_args(call_item.params)
+
+                return await self.handle_method(
+                    call_item.method,
+                    call_item.serial,
+                    *args, **kwargs
+                )
+            elif not isinstance(call_item.result, Nothing):
+                return await self.handle_result(
+                    call_item.serial, call_item.result
+                )
+            elif not isinstance(call_item.error, Nothing):
+                return await self.handle_error(
+                    call_item.serial, call_item.error
+                )
+            else:
+                return await self.handle_result(call_item.serial, None)
+
+        except Exception as e:
+            log.exception(e)
+
+            if call_item.serial:
+                await self._send(
+                    error=self._format_error(e),
+                    id=call_item.serial
+                )
+        finally:
+            self._call_later(
+                self._CLEAN_LOCK_TIMEOUT,
+                self.__clean_lock,
+                call_item.serial,
+            )
+
+    @staticmethod
+    def _parse_message(data: dict) -> CallItem:
+        return CallItem(
+            serial=data.get('id'),
+            method=data.get('method', Nothing()),
+            result=data.get('result', Nothing()),
+            error=data.get('error', Nothing()),
+            params=data.get('params')
+        )
+
+    async def handle_message(self, message: aiohttp.WSMessage):
+        # noinspection PyTypeChecker, PyNoneFunctionAssignment
+        data = message.json(loads=loads)    # type: dict
+        log.debug("Got message: %r", data)
+
         serial = data.get('id')
 
         if serial is None:
             return await self.handle_event(data)
 
-        method = data.get('method')
-        result = data.get('result')
-        error = data.get('error')
-
-        log.debug("Acquiring lock for %s serial %s", self, serial)
         async with self._locks[serial]:
-            try:
-                if 'method' in data:
-                    args, kwargs = self.prepare_args(
-                        data.get('params', None)
-                    )
-                    return await self.handle_method(
-                        method, serial, *args, **kwargs
-                    )
-                elif 'result' in data:
-                    return await self.handle_result(serial, result)
-                elif 'error' in data:
-                    return await self.handle_error(serial, error)
-                else:
-                    return await self.handle_result(serial, None)
-
-            except Exception as e:
-                log.exception(e)
-
-                if serial:
-                    await self._send(error=self._format_error(e), id=serial)
-            finally:
-                self._call_later(
-                    self._CLEAN_LOCK_TIMEOUT, self.__clean_lock, serial
-                )
+            call_item = self._parse_message(data)
+            await self._call_method(call_item)
 
     async def _on_message(self, msg: aiohttp.WSMessage):
         async def unknown_method(msg: aiohttp.WSMessage):
