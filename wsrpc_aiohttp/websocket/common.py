@@ -11,7 +11,7 @@ from typing import Union, Callable, Any, Dict, Mapping
 import aiohttp
 
 from .tools import loads
-from .route import WebSocketRoute
+from .route import WebSocketRoute, decorators
 
 
 class ClientException(Exception):
@@ -388,6 +388,9 @@ class WSRPCBase:
 
         """
         assert callable(handler) or isinstance(handler, WebSocketRoute)
+        if callable(handler):
+            handler = decorators.proxy(handler)
+
         cls.get_routes()[route] = handler
 
     def add_event_listener(self, func: Callable[[dict], Any]):

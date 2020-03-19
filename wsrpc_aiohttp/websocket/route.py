@@ -6,27 +6,21 @@ from . import handler       # noqa
 log = logging.getLogger("wsrpc")
 
 
-class decorators(object):
-    _NOPROXY = set([])
+class decorators:
+
+    _PROXY_ATTR = '__wsrpc_aiohttp_proxy__'
 
     @staticmethod
-    def noproxy(func):
-        decorators._NOPROXY.add(func)
-        return func
+    def proxy(f):
+        setattr(f, decorators._PROXY_ATTR, True)
+        return f
+
+    @staticmethod
+    def is_proxied(f):
+        return getattr(f, decorators._PROXY_ATTR, False)
 
 
 class WebSocketRoute(object):
-    _NOPROXY = []
-
-    @classmethod
-    def noproxy(cls, func):
-        def wrap(*args, **kwargs):
-            if func not in cls._NOPROXY:
-                cls._NOPROXY.append(func)
-                wrap(*args, **kwargs)
-
-            return func(*args, **kwargs)
-        return wrap
 
     def __init__(self, obj: 'handler.WebSocketBase'):
         self.socket = obj
@@ -41,7 +35,7 @@ class WebSocketRoute(object):
 
         if hasattr(self, method):
             func = getattr(self, method)
-            if func in decorators._NOPROXY:
+            if decorators.is_proxied(func):
                 raise NotImplementedError('Method not implemented')
             else:
                 return func
@@ -56,4 +50,4 @@ class WebSocketRoute(object):
         log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
 
 
-__all__ = 'WebSocketRoute', 'decorators',
+__all__ = 'WebSocketRoute',
