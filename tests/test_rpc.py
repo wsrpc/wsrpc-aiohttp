@@ -5,18 +5,28 @@ import time
 
 from wsrpc_aiohttp.testing import BaseTestCase, async_timeout
 from wsrpc_aiohttp import WebSocketRoute
-
+from wsrpc_aiohttp.websocket.common import ClientException
+from wsrpc_aiohttp.websocket.route import decorators
 
 DATA_TO_RETURN = 1000
 
 
-class ReverseRoute(WebSocketRoute):
+class Mixin:
+
+    def foo(self):
+        return 'bar'
+
+
+class ReverseRoute(WebSocketRoute, Mixin):
+
     def init(self, data):
         self.data = data
 
+    @decorators.proxy
     def reverse(self):
         self.data = self.data[::-1]
 
+    @decorators.proxy
     def get_data(self):
         return self.data
 
@@ -37,6 +47,13 @@ class TestServerRPC(BaseTestCase):
         response = await client.proxy.reverse.get_data()
 
         self.assertEqual(response, data[::-1])
+
+    @async_timeout
+    async def test_call_not_proxied(self):
+        self.WebSocketHandler.add_route('reverse', ReverseRoute)
+        client = await self.get_ws_client()
+        with self.assertRaises(ClientException):
+            await client.proxy.reverse.foo()
 
     @async_timeout
     async def test_call_func(self):
