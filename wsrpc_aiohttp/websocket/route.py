@@ -27,7 +27,7 @@ class decorators(object):
         return getattr(f, decorators._PROXY_ATTR, False)
 
 
-class AbstractWebSocketRoute(ABC):
+class AbstractRoute(ABC):
 
     def __init__(self, obj: 'handler.WebSocketBase'):
         self.socket = obj
@@ -53,7 +53,7 @@ class AbstractWebSocketRoute(ABC):
             raise NotImplementedError('Method not implemented')
 
 
-class BaseWebSocketRoute(AbstractWebSocketRoute):
+class Route(AbstractRoute):
 
     @abstractmethod
     def proxy(self, method):
@@ -65,7 +65,7 @@ class BaseWebSocketRoute(AbstractWebSocketRoute):
         log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
 
 
-class LegacyWebSocketRoute(BaseWebSocketRoute):
+class LegacyRoute(Route):
     _NOPROXY = []
 
     @classmethod
@@ -84,10 +84,10 @@ class LegacyWebSocketRoute(BaseWebSocketRoute):
         return not (func in decorators._NOPROXY)
 
 
-WebSocketRoute = LegacyWebSocketRoute
+WebSocketRoute = LegacyRoute
 
 
 __all__ = (
-    'AbstractWebSocketRoute', 'BaseWebSocketRoute',
-    'WebSocketRoute', 'LegacyWebSocketRoute', 'decorators',
+    'AbstractRoute', 'Route',
+    'WebSocketRoute', 'LegacyRoute', 'decorators',
 )
