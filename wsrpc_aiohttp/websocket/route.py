@@ -23,11 +23,11 @@ class decorators(object):
         return f
 
     @staticmethod
-    def is_proxied(f):
+    def proxied(f):
         return getattr(f, decorators._PROXY_ATTR, False)
 
 
-class BaseWebSocketRoute(ABC):
+class AbstractWebSocketRoute(ABC):
 
     def __init__(self, obj: 'handler.WebSocketBase'):
         self.socket = obj
@@ -40,20 +40,32 @@ class BaseWebSocketRoute(ABC):
         pass
 
     @abstractmethod
-    def is_proxied(self, method):
+    def proxy(self, method):
         raise NotImplementedError
 
     def _resolve(self, method):
         if method.startswith('_'):
             raise AttributeError('Trying to get private method.')
 
-        if hasattr(self, method) and self.is_proxied(method):
+        if hasattr(self, method) and self.proxy(method):
             return getattr(self, method)
         else:
             raise NotImplementedError('Method not implemented')
 
 
-class WebSocketRoute(BaseWebSocketRoute):
+class BaseWebSocketRoute(AbstractWebSocketRoute):
+
+    @abstractmethod
+    def proxy(self, method):
+        func = getattr(self, method)
+        return decorators.proxied(func)
+
+    @decorators.proxy
+    def placebo(self, *args, **kwargs):
+        log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
+
+
+class LegacyWebSocketRoute(BaseWebSocketRoute):
     _NOPROXY = []
 
     @classmethod
@@ -67,24 +79,15 @@ class WebSocketRoute(BaseWebSocketRoute):
         return wrap
 
     @abstractmethod
-    def is_proxied(self, method):
+    def proxy(self, method):
         func = getattr(self, method)
         return not (func in decorators._NOPROXY)
 
-    def placebo(self, *args, **kwargs):
-        log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
+
+WebSocketRoute = LegacyWebSocketRoute
 
 
-class WebSocketRouteExplicit(BaseWebSocketRoute):
-
-    @abstractmethod
-    def is_proxied(self, method):
-        func = getattr(self, method)
-        return decorators.is_proxied(func)
-
-    @decorators.proxy
-    def placebo(self, *args, **kwargs):
-        log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
-
-
-__all__ = 'WebSocketRoute', 'decorators'
+__all__ = (
+    'AbstractWebSocketRoute', 'BaseWebSocketRoute',
+    'WebSocketRoute', 'LegacyWebSocketRoute', 'decorators',
+)
