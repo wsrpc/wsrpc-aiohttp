@@ -136,11 +136,14 @@ class WSRPCBase:
         if message:
             log.info("Closing WebSocket because message %r received", message)
 
+        cancel_tasks = []
         for task in tuple(self._pending_tasks):
             task.cancel()
 
             if hasattr(task, 'cancelled') and not task.cancelled():
-                self._loop.create_task(task_waiter(task))
+                cancel_tasks.append(task_waiter(task))
+        if cancel_tasks:
+            await asyncio.wait(cancel_tasks)
 
     async def handle_binary(self, message: aiohttp.WSMessage):
         log.warning("Unhandled message %r %r", message.type, message.data)
