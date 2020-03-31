@@ -1,25 +1,32 @@
 from http import HTTPStatus
 
+import pytest
 from aiohttp import WSServerHandshakeError
 
-from wsrpc_aiohttp.testing import BaseTestCase
-from wsrpc_aiohttp import WebSocketAsync
+from wsrpc_aiohttp import WebSocketAsync, WSRPCClient
 
 
-class TestAuth(BaseTestCase):
-    class WebSocketHandler(WebSocketAsync):
-        AUTHORIZE = False
+class WebSocketHandler(WebSocketAsync):
+    AUTHORIZE = False
 
-        async def authorize(self):
-            return self.AUTHORIZE
+    async def authorize(self):
+        return self.AUTHORIZE
 
-    async def test_auth_fail(self):
-        self.WebSocketHandler.AUTHORIZE = False
-        with self.assertRaises(WSServerHandshakeError) as e:
-            await self.get_ws_client()
 
-        self.assertEqual(e.exception.status, HTTPStatus.FORBIDDEN)
+@pytest.fixture
+def handler():
+    return WebSocketHandler
 
-    async def test_auth_ok(self):
-        self.WebSocketHandler.AUTHORIZE = True
-        await self.get_ws_client()
+
+async def test_auth_fail(client: WSRPCClient, handler):
+    handler.AUTHORIZE = False
+
+    with pytest.raises(WSServerHandshakeError) as e:
+        await client.connect()
+
+    assert e.value.status == HTTPStatus.FORBIDDEN
+
+
+async def test_auth_ok(client: WSRPCClient, handler):
+    handler.AUTHORIZE = True
+    await client.connect()

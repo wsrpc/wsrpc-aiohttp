@@ -10,7 +10,7 @@ except ImportError:
 
 
 class Lazy:
-    __slots__ = 'func',
+    __slots__ = ("func",)
 
     def __init__(self, func):
         self.func = func
@@ -42,7 +42,7 @@ def serializer(value):
     raise ValueError("Can not serialize %r" % type(value))
 
 
-@serializer.register(bytes)     # noqa: W0404
+@serializer.register(bytes)  # noqa: W0404
 def _(value):
     return base64.b64encode(value).decode()
 
@@ -51,4 +51,4 @@ def dumps(obj):
     return _dumps(obj, default=serializer)
 
 
-__all__ = ('dumps', 'loads', 'Lazy')
+__all__ = ("dumps", "loads", "Lazy")
