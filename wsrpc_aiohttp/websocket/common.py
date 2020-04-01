@@ -181,8 +181,6 @@ class WSRPCBase:
         log.warning("Unhandled message %r %r", message.type, message.data)
 
     async def _call_method(self, call_item: CallItem):
-        log.debug("Acquiring lock for %s serial %s", self, call_item.serial)
-
         try:
             if not isinstance(call_item.method, Nothing):
                 args, kwargs = self.prepare_args(call_item.params)
@@ -233,6 +231,7 @@ class WSRPCBase:
         if serial is None:
             return await self.handle_event(data)
 
+        log.debug("Acquiring lock for %r serial %r", self, serial)
         async with self._locks[serial]:
             call_item = self._parse_message(data)
             await self._call_method(call_item)
