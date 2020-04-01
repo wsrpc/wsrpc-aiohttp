@@ -10,7 +10,6 @@ from aiohttp import WebSocketError, web
 from aiohttp.abc import AbstractView
 
 from .common import ClientException, WSRPCBase
-from .route import WebSocketRoute
 from .tools import Lazy, awaitable, dumps
 
 

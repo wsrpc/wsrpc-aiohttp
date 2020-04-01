@@ -19,6 +19,7 @@ __all__ = (
     "STATIC_DIR",
     "WSRPCBase",
     "WSRPCClient",
+    "WSRPCError",
     "WebSocketAsync",
     "WebSocketBase",
     "WebSocketRoute",

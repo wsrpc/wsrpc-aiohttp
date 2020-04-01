@@ -61,7 +61,7 @@ class RouteBase(metaclass=RouteMeta):
             self.__loop = asyncio.get_event_loop()
 
     @property
-    def socket(self) -> "WebSocketBase":
+    def socket(self) -> "WebSocketBase":  # noqa
         return self.__socket
 
     @property
