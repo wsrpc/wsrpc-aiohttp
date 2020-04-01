@@ -2,7 +2,6 @@ import logging
 
 import asyncio
 from types import MappingProxyType
-from abc import abstractmethod
 
 from . import handler, decorators  # noqa
 
