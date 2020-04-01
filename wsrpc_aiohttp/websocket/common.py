@@ -10,7 +10,7 @@ from typing import Optional, Dict, List, Any, Union
 
 import aiohttp
 
-from .tools import loads
+from .tools import loads, Singleton
 from .route import Route, decorators
 
 
@@ -75,13 +75,8 @@ class _Proxy:
         return _ProxyMethod(self.__call, item)
 
 
-class Nothing:
-    _instance = None
-
-    def __new__(cls):
-        if not cls._instance:
-            cls._instance = super(Nothing, cls).__new__(cls)
-        return cls._instance
+class Nothing(Singleton):
+    pass
 
 
 CallItem = NamedTuple(

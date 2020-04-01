@@ -51,4 +51,18 @@ def dumps(obj):
     return _dumps(obj, default=serializer)
 
 
-__all__ = ("dumps", "loads", "Lazy")
+class SingletonMeta(type):
+    def __new__(cls, clsname, superclasses, attributedict):
+        klass = type.__new__(cls, clsname, superclasses, attributedict)
+        klass.__instance__ = None
+        return klass
+
+
+class Singleton(metaclass=SingletonMeta):
+    def __new__(cls, *args, **kwargs):
+        if not cls.__instance__:
+            cls.__instance__ = super(Singleton, cls).__new__(cls)
+        return cls.__instance__
+
+
+__all__ = ("dumps", "loads", "Lazy", "Singleton")

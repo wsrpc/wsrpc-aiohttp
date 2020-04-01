@@ -5,7 +5,7 @@ import pytest
 from async_timeout import timeout
 
 from wsrpc_aiohttp import (
-    WebSocketRoute, WSRPCClient, WebSocketAsync, decorators, ClientException
+    WebSocketRoute, WSRPCClient, WebSocketAsync, ClientException
 )
 
 
@@ -75,15 +75,15 @@ async def test_call_method(client: WSRPCClient, handler: WebSocketAsync):
 
 async def test_call_timeout(client: WSRPCClient, handler: WebSocketAsync):
     async def will_sleep_for(_, seconds):
-        with timeout(1.5):
+        with timeout(0.5):
             await asyncio.sleep(seconds)
             return DATA_TO_RETURN
 
     handler.add_route("will_sleep_for", will_sleep_for)
 
     async with client:
-        response = await client.proxy.will_sleep_for(seconds=1)
+        response = await client.proxy.will_sleep_for(seconds=0.1)
         assert response == DATA_TO_RETURN
 
         with pytest.raises(ClientException):
-            await client.proxy.will_sleep_for(seconds=7)
+            await client.proxy.will_sleep_for(seconds=1)
