@@ -18,7 +18,8 @@ from typing import (
 
 import aiohttp
 
-from .route import Route, decorators
+from . import decorators
+from .route import Route
 from .tools import Singleton, awaitable, loads
 
 
@@ -172,11 +173,15 @@ class WSRPCBase:
     async def _call_method(self, call_item: CallItem):
         try:
             if not isinstance(call_item.method, Nothing):
-                args, kwargs = self.prepare_args(call_item.params)
-
-                return await self.handle_method(
-                    call_item.method, call_item.serial, *args, **kwargs
+                log.debug(
+                    "Acquiring lock for %r serial %r", self, call_item.serial
                 )
+                async with self._locks[call_item.serial]:
+                    args, kwargs = self.prepare_args(call_item.params)
+
+                    return await self.handle_method(
+                        call_item.method, call_item.serial, *args, **kwargs
+                    )
             elif not isinstance(call_item.result, Nothing):
                 return await self.handle_result(
                     call_item.serial, call_item.result
@@ -220,10 +225,8 @@ class WSRPCBase:
         if serial is None:
             return await self.handle_event(data)
 
-        log.debug("Acquiring lock for %r serial %r", self, serial)
-        async with self._locks[serial]:
-            call_item = self._parse_message(data)
-            await self._call_method(call_item)
+        call_item = self._parse_message(data)
+        await self._call_method(call_item)
 
     async def _on_message(self, msg: aiohttp.WSMessage):
         async def unknown_method(msg: aiohttp.WSMessage):
@@ -366,7 +369,7 @@ class WSRPCBase:
         self._serial += 2
         return self._serial
 
-    async def call(self, func: str, **kwargs):
+    async def call(self, func: str, timeout=None, **kwargs):
         """ Method for call remote function
 
         Remote methods allows only kwargs as arguments.
@@ -405,7 +408,10 @@ class WSRPCBase:
         )
 
         await self._send(**payload)
-        return await asyncio.wait_for(future, self._timeout)
+        result = await asyncio.wait_for(
+            future, timeout=timeout or self._timeout
+        )
+        return result
 
     async def emit(self, event):
         await self._send(**event)

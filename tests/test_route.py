@@ -102,7 +102,7 @@ def test_is_method_allowed():
     assert "foobar" not in FooRoute.__no_proxy__
 
 
-def test_route__init__():
+def test_route__init__(loop):
     socket = Mock()
     socket._loop = object()
 
@@ -111,7 +111,6 @@ def test_route__init__():
     assert route.socket is socket
     assert route.loop is socket._loop
 
-    loop = asyncio.get_event_loop()
     socket = object()
     route = Route(socket)
 

@@ -54,11 +54,15 @@ class RouteBase(metaclass=RouteMeta):
     __no_proxy__ = MappingProxyType({})
 
     def __init__(self, obj):
-        self.socket = obj
+        self.__socket = obj
         self.__loop = getattr(self.socket, "_loop", None)
 
         if self.__loop is None:
             self.__loop = asyncio.get_event_loop()
+
+    @property
+    def socket(self) -> "WebSocketBase":
+        return self.__socket
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -93,10 +97,6 @@ class Route(RouteBase):
 
     def __call__(self, method):
         return self._method_lookup(method)
-
-    @decorators.proxy
-    def placebo(self, *args, **kwargs):
-        log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
 
 
 class AllowedRoute(Route):
