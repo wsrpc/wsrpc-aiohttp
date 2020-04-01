@@ -13,6 +13,13 @@ class RouteMeta(type):
     def __new__(cls, clsname, superclasses, attributedict):
         attrs = {"__no_proxy__": set(), "__proxy__": set()}
 
+        for superclass in superclasses:
+            if not hasattr(superclass, "__proxy__"):
+                continue
+
+            attrs["__no_proxy__"].update(superclass.__no_proxy__)
+            attrs["__proxy__"].update(superclass.__proxy__)
+
         for key, value in attributedict.items():
             if key in ("__proxy__", "__no_proxy__"):
                 continue
