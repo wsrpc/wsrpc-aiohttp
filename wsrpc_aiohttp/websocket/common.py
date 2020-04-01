@@ -22,15 +22,24 @@ from .route import Route, decorators
 from .tools import Singleton, awaitable, loads
 
 
-class ClientException(Exception):
+class WSRPCError(Exception):
     pass
 
 
-class PingTimeoutError(Exception):
+class ClientException(WSRPCError):
+    __slots__ = ("type", "message", "raw")
+
+    def __init__(self, payload):
+        self.type = payload.get("type")
+        self.message = payload.get("message")
+        self.raw = payload
+
+
+class PingTimeoutError(WSRPCError):
     pass
 
 
-def ping(obj, **kwargs):
+def ping(_, **kwargs):
     return kwargs
 
 
@@ -343,7 +352,7 @@ class WSRPCBase:
             if class_name not in self._handlers:
                 self._handlers[class_name] = callee(self)
 
-            return self._handlers[class_name]._resolve(method)  # noqa
+            return self._handlers[class_name](method)
 
         callee = self.routes.get(func_name, self._unresolvable)
         if hasattr(callee, "__call__"):
@@ -470,4 +479,4 @@ class WSRPCBase:
         return _Proxy(self.call)
 
 
-__all__ = ("Route", "WSRPCBase", "ClientException")
+__all__ = ("Route", "WSRPCBase", "ClientException", "WSRPCError")

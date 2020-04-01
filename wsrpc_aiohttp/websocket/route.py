@@ -79,20 +79,20 @@ class RouteBase(metaclass=RouteMeta):
 class Route(RouteBase):
     def _method_lookup(self, method):
         if method in self.__no_proxy__:
-            return
+            raise NotImplementedError("Method masked")
 
         if method in self.__proxy__:
             return getattr(self, method)
 
-    def _resolve(self, method):
-        if method.startswith("_") or method in self.__no_proxy__:
-            raise AttributeError("Trying to get private method.")
-
-        func = self._method_lookup(method)
-        if func is not None:
-            return func
-
         raise NotImplementedError("Method not implemented")
+
+    @classmethod
+    def __is_method_masked__(cls, name, func):
+        if name.startswith("_"):
+            return True
+
+    def __call__(self, method):
+        return self._method_lookup(method)
 
     @decorators.proxy
     def placebo(self, *args, **kwargs):

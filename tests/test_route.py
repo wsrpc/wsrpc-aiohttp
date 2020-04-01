@@ -12,9 +12,8 @@ def test_meta():
     assert MyRoute.__no_proxy__ is not None
 
 
-def test_inhertance():
+def test_inheritance():
     class BaseRoute(Route):
-
         @decorators.proxy
         def count(self):
             return 0
