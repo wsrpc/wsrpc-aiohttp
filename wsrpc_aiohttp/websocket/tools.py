@@ -1,5 +1,6 @@
+import asyncio
 import base64
-from functools import singledispatch
+from functools import singledispatch, wraps
 from json import dumps as _dumps
 
 
@@ -65,4 +66,30 @@ class Singleton(metaclass=SingletonMeta):
         return cls.__instance__
 
 
-__all__ = ("dumps", "loads", "Lazy", "Singleton")
+__all__ = (
+    "Lazy",
+    "Singleton",
+    "awaitable",
+    "dumps",
+    "loads",
+)
+
+
+def awaitable(func):
+    if asyncio.iscoroutinefunction(func):
+        return func
+
+    @wraps(func)
+    async def wrap(*args, **kwargs):
+        result = func(*args, **kwargs)
+
+        is_awaitable = (
+            asyncio.iscoroutine(result)
+            or asyncio.isfuture(result)
+            or hasattr(result, "__await__")
+        )
+        if is_awaitable:
+            return await result
+        return result
+
+    return wrap

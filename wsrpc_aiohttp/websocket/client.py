@@ -4,8 +4,8 @@ from typing import Union
 import aiohttp
 from yarl import URL
 
-from .common import WSRPCBase, awaitable
-from .tools import Lazy, dumps
+from .common import WSRPCBase
+from .tools import Lazy, awaitable, dumps
 
 
 log = logging.getLogger(__name__)

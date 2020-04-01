@@ -8,9 +8,9 @@ import aiohttp
 from aiohttp import WebSocketError, web
 from aiohttp.abc import AbstractView
 
-from .common import ClientException, WSRPCBase, awaitable
+from .common import ClientException, WSRPCBase
 from .route import WebSocketRoute
-from .tools import Lazy, dumps
+from .tools import Lazy, awaitable, dumps
 
 
 global_log = logging.getLogger("wsrpc")

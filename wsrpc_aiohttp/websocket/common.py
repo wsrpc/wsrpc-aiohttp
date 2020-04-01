@@ -4,7 +4,7 @@ import logging
 import types
 from collections import defaultdict
 from enum import IntEnum
-from functools import partial, wraps
+from functools import partial
 from typing import (
     Any,
     Callable,
@@ -19,7 +19,7 @@ from typing import (
 import aiohttp
 
 from .route import Route, decorators
-from .tools import Singleton, loads
+from .tools import Singleton, awaitable, loads
 
 
 class ClientException(Exception):
@@ -37,26 +37,6 @@ def ping(obj, **kwargs):
 log = logging.getLogger(__name__)
 RouteType = Union[Callable[["WSRPCBase", Any], Any], Route]
 FrameMappingItemType = Mapping[IntEnum, Callable[[aiohttp.WSMessage], Any]]
-
-
-def awaitable(func):
-    if asyncio.iscoroutinefunction(func):
-        return func
-
-    @wraps(func)
-    async def wrap(*args, **kwargs):
-        result = func(*args, **kwargs)
-
-        is_awaitable = (
-            asyncio.iscoroutine(result)
-            or asyncio.isfuture(result)
-            or hasattr(result, "__await__")
-        )
-        if is_awaitable:
-            return await result
-        return result
-
-    return wrap
 
 
 class _ProxyMethod:

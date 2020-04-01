@@ -2,7 +2,7 @@ import asyncio
 import logging
 from types import MappingProxyType
 
-from . import decorators, handler  # noqa
+from . import decorators
 
 
 log = logging.getLogger("wsrpc")
@@ -14,6 +14,8 @@ class RouteMeta(type):
         attrs = {"__no_proxy__": {}, "__proxy__": {}}
 
         for key, value in attributedict.items():
+            if key in ("__proxy__", "__no_proxy__"):
+                continue
             if isinstance(value, decorators.NoProxyFunction):
                 if isinstance(value, decorators.ProxyBase):
                     value = value.func
@@ -46,7 +48,10 @@ class RouteMeta(type):
 
 
 class RouteBase(metaclass=RouteMeta):
-    def __init__(self, obj: "handler.WebSocketBase"):
+    __proxy__ = MappingProxyType({})
+    __no_proxy__ = MappingProxyType({})
+
+    def __init__(self, obj):
         self.socket = obj
 
     @property
