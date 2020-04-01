@@ -55,24 +55,18 @@ def dumps(obj):
 class SingletonMeta(type):
     def __new__(cls, clsname, superclasses, attributedict):
         klass = type.__new__(cls, clsname, superclasses, attributedict)
-        klass.__instance__ = None
         return klass
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__instance = self
+
+    def __call__(self, *args, **kwargs):
+        return self.__instance
 
 
 class Singleton(metaclass=SingletonMeta):
-    def __new__(cls, *args, **kwargs):
-        if not cls.__instance__:
-            cls.__instance__ = super(Singleton, cls).__new__(cls)
-        return cls.__instance__
-
-
-__all__ = (
-    "Lazy",
-    "Singleton",
-    "awaitable",
-    "dumps",
-    "loads",
-)
+    pass
 
 
 def awaitable(func):
@@ -93,3 +87,13 @@ def awaitable(func):
         return result
 
     return wrap
+
+
+__all__ = (
+    "Lazy",
+    "Singleton",
+    "awaitable",
+    "dumps",
+    "loads",
+)
+
