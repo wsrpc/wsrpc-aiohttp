@@ -25,6 +25,7 @@ class ReverseRoute(WebSocketRoute, Mixin):
         self.data = data
 
     def reverse(self):
+        assert isinstance(self, ReverseRoute), str(type(self))
         self.data = self.data[::-1]
 
     def get_data(self):

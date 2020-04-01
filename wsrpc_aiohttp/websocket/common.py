@@ -273,7 +273,8 @@ class WSRPCBase:
             a.extend(args)
             args = a
 
-        result = await self._executor(partial(callee, *args, **kwargs))
+        func = partial(callee, *args, **kwargs)
+        result = await self._executor(func)
         await self._send(result=result, id=serial)
 
     async def handle_result(self, serial, result):
