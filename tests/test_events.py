@@ -1,4 +1,4 @@
-from wsrpc_aiohttp import WSRPCBase, WebSocketAsync, WSRPCClient
+from wsrpc_aiohttp import WSRPCBase, WSRPCClient
 
 
 async def emitter(socket: WSRPCBase):

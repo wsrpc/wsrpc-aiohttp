@@ -4,12 +4,11 @@ from .websocket.handler import (
     WSRPCBase,
     WebSocketAsync,
     WebSocketBase,
-    WebSocketRoute,
     WebSocketThreaded,
 )
 from .websocket import decorators
 from .websocket.route import (
-    RouteBase, Route, AllowedRoute, PrefixRoute, WebSocketRoute
+    Route, AllowedRoute, PrefixRoute, WebSocketRoute
 )
 from .websocket.client import WSRPCClient
 from .websocket.tools import serializer
