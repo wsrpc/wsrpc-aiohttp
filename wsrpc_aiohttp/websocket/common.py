@@ -5,13 +5,21 @@ import types
 from collections import defaultdict
 from enum import IntEnum
 from functools import partial, wraps
-from typing import Callable, Mapping, NamedTuple
-from typing import Optional, Dict, List, Any, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Union,
+)
 
 import aiohttp
 
-from .tools import loads, Singleton
 from .route import Route, decorators
+from .tools import Singleton, loads
 
 
 class ClientException(Exception):
@@ -276,9 +284,7 @@ class WSRPCBase:
 
     @staticmethod
     def is_route(func):
-        return hasattr(func, "__self__") and isinstance(
-            func.__self__, Route
-        )
+        return hasattr(func, "__self__") and isinstance(func.__self__, Route)
 
     async def handle_method(self, method, serial, *args, **kwargs):
         callee = self.resolver(method)
@@ -334,7 +340,9 @@ class WSRPCBase:
 
     def resolver(self, func_name):
         class_name, method = (
-            func_name.split(".", 1) if "." in func_name else (func_name, "init")
+            func_name.split(".", 1)
+            if "." in func_name
+            else (func_name, "init")
         )
 
         callee = self.routes.get(class_name, self._unresolvable)

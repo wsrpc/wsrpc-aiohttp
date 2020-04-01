@@ -1,16 +1,15 @@
 import os.path
+
+from .websocket import decorators
+from .websocket.client import WSRPCClient
 from .websocket.handler import (
     ClientException,
-    WSRPCBase,
     WebSocketAsync,
     WebSocketBase,
     WebSocketThreaded,
+    WSRPCBase,
 )
-from .websocket import decorators
-from .websocket.route import (
-    Route, AllowedRoute, PrefixRoute, WebSocketRoute
-)
-from .websocket.client import WSRPCClient
+from .websocket.route import AllowedRoute, PrefixRoute, Route, WebSocketRoute
 from .websocket.tools import serializer
 
 

@@ -1,12 +1,12 @@
+import logging
 from typing import Union
 
 import aiohttp
-import logging
-
 from yarl import URL
 
-from .tools import Lazy, dumps
 from .common import WSRPCBase, awaitable
+from .tools import Lazy, dumps
+
 
 log = logging.getLogger(__name__)
 

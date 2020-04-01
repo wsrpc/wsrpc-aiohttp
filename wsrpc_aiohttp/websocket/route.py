@@ -1,9 +1,9 @@
-import logging
-
 import asyncio
+import logging
 from types import MappingProxyType
 
-from . import handler, decorators  # noqa
+from . import decorators, handler  # noqa
+
 
 log = logging.getLogger("wsrpc")
 
@@ -17,11 +17,11 @@ class RouteMeta(type):
             if isinstance(value, decorators.NoProxyFunction):
                 if isinstance(value, decorators.ProxyBase):
                     value = value.func
-                attrs['__no_proxy__'][key] = value
+                attrs["__no_proxy__"][key] = value
             elif isinstance(value, decorators.ProxyFunction):
                 if isinstance(value, decorators.ProxyBase):
                     value = value.func
-                attrs['__proxy__'][key] = value
+                attrs["__proxy__"][key] = value
 
             attrs[key] = value
 
@@ -35,9 +35,9 @@ class RouteMeta(type):
                 value = value.func
 
             if instance.__is_method_allowed__(key, value) is True:
-                attrs['__proxy__'][key] = value
+                attrs["__proxy__"][key] = value
             elif instance.__is_method_masked__(key, value) is True:
-                attrs['__no_proxy__'][key] = value
+                attrs["__no_proxy__"][key] = value
 
         for key in ("__no_proxy__", "__proxy__"):
             attrs[key] = MappingProxyType(attrs[key])
@@ -93,7 +93,7 @@ class AllowedRoute(Route):
 
 
 class PrefixRoute(Route):
-    PREFIX = 'rpc_'
+    PREFIX = "rpc_"
 
     @classmethod
     def __is_method_allowed__(cls, name, func):

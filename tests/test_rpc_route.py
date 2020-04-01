@@ -3,9 +3,12 @@ import uuid
 
 import pytest
 from async_timeout import timeout
-
 from wsrpc_aiohttp import (
-    Route, WSRPCClient, WebSocketAsync, decorators, ClientException
+    ClientException,
+    Route,
+    WebSocketAsync,
+    WSRPCClient,
+    decorators,
 )
 
 

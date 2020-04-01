@@ -1,13 +1,13 @@
+import asyncio
 import logging
 import os
 import time
 from binascii import hexlify
-
-import aiohttp.web
-import asyncio
 from random import choice
 
-from wsrpc_aiohttp import WebSocketAsync, STATIC_DIR, WebSocketRoute
+import aiohttp.web
+from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync, WebSocketRoute
+
 
 loop = asyncio.get_event_loop()
 app = aiohttp.web.Application(loop=loop)

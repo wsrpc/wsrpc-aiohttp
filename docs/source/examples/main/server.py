@@ -1,10 +1,10 @@
+import asyncio
 import logging
 import uuid
 
 import aiohttp.web
-import asyncio
+from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync
 
-from wsrpc_aiohttp import WebSocketAsync, STATIC_DIR
 
 loop = asyncio.get_event_loop()
 app = aiohttp.web.Application(loop=loop)

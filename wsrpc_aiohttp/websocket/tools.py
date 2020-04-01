@@ -1,7 +1,7 @@
 import base64
 from functools import singledispatch
-
 from json import dumps as _dumps
+
 
 try:
     from ujson import loads

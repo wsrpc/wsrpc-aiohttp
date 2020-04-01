@@ -1,7 +1,6 @@
 import pytest
 from aiohttp import ClientSession
 from aiohttp.web import Application
-
 from wsrpc_aiohttp import WebSocketAsync, WSRPCClient
 
 
