@@ -24,12 +24,10 @@ class RouteMeta(type):
             if key in ("__proxy__", "__no_proxy__"):
                 continue
             if isinstance(value, decorators.NoProxyFunction):
-                if isinstance(value, decorators.ProxyBase):
-                    value = value.func
+                value = value.func
                 attrs["__no_proxy__"].add(key)
             elif isinstance(value, decorators.ProxyFunction):
-                if isinstance(value, decorators.ProxyBase):
-                    value = value.func
+                value = value.func
                 attrs["__proxy__"].add(key)
 
             attrs[key] = value
@@ -39,9 +37,6 @@ class RouteMeta(type):
         for key, value in attrs.items():
             if not callable(value):
                 continue
-
-            if isinstance(value, decorators.ProxyBase):
-                value = value.func
 
             if instance.__is_method_allowed__(key, value) is True:
                 instance.__proxy__.add(key)
@@ -60,10 +55,14 @@ class RouteBase(metaclass=RouteMeta):
 
     def __init__(self, obj):
         self.socket = obj
+        self.__loop = getattr(self.socket, "_loop", None)
+
+        if self.__loop is None:
+            self.__loop = asyncio.get_event_loop()
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
-        return self.socket._loop  # noqa
+        return self.__loop
 
     def _onclose(self):
         pass
