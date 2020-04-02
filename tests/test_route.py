@@ -118,7 +118,7 @@ def test_route__init__(loop):
     assert route.loop is loop
 
 
-def test_abc_inheritance():
+def test_abc_inheritance(loop):
     class AbstractMixin(ABC):
         @abstractmethod
         def foo(self):
@@ -126,7 +126,7 @@ def test_abc_inheritance():
 
     class Mixin(AbstractMixin):
         def foo(self):
-            return 'bar'
+            return "bar"
 
     class RouteWithMixin(Route, Mixin):
         pass
