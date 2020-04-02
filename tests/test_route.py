@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from unittest.mock import Mock
 
 from wsrpc_aiohttp import Route, decorators
@@ -115,3 +116,19 @@ def test_route__init__(loop):
 
     assert route.socket is socket
     assert route.loop is loop
+
+
+def test_abc_inheritance():
+    class AbstractMixin(ABC):
+        @abstractmethod
+        def foo(self):
+            raise NotImplementedError
+
+    class Mixin(AbstractMixin):
+        def foo(self):
+            return 'bar'
+
+    class RouteWithMixin(Route, Mixin):
+        pass
+
+    assert RouteWithMixin(None)

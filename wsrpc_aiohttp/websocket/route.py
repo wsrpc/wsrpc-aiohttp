@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from abc import ABCMeta
 from types import MappingProxyType
 
 from . import decorators
@@ -9,7 +10,7 @@ log = logging.getLogger("wsrpc")
 
 
 # noinspection PyUnresolvedReferences
-class RouteMeta(type):
+class RouteMeta(ABCMeta):
     def __new__(cls, clsname, superclasses, attributedict):
         attrs = {"__no_proxy__": set(), "__proxy__": set()}
 
@@ -32,7 +33,9 @@ class RouteMeta(type):
 
             attrs[key] = value
 
-        instance = type.__new__(cls, clsname, superclasses, attrs)
+        instance = super(RouteMeta, cls).__new__(
+            cls, clsname, superclasses, attrs
+        )
 
         for key, value in attrs.items():
             if not callable(value):
