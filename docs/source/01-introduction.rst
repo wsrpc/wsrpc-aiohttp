@@ -69,6 +69,7 @@ In this case socket instance will store an initialized instance of
 this class and instance appears after first route call.
 
 .. code-block:: python
+
     from wsrpc_aiohttp import decorators
 
     class Storage(Route):
