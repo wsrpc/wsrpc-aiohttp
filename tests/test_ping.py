@@ -1,8 +1,7 @@
-from wsrpc_aiohttp.testing import BaseTestCase
+from wsrpc_aiohttp import WSRPCClient
 
 
-class TestPing(BaseTestCase):
-    async def test_ping(self):
-        client = await self.get_ws_client()
-        response = await client.call('ping', pong='pong')
-        self.assertEqual(response['pong'], 'pong')
+async def test_ping(client: WSRPCClient):
+    async with client:
+        response = await client.call("ping", pong="pong")
+        assert response["pong"], "pong"

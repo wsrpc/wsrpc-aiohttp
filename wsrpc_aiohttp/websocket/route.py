@@ -1,93 +1,138 @@
-import logging
-
 import asyncio
-from abc import ABC, abstractmethod
+import logging
+from abc import ABCMeta
+from types import MappingProxyType
 
-from . import handler       # noqa
+from . import decorators
+
 
 log = logging.getLogger("wsrpc")
 
 
-class decorators(object):
-    _NOPROXY = set([])
-    _PROXY_ATTR = '__wsrpc_aiohttp_proxy__'
+# noinspection PyUnresolvedReferences
+class RouteMeta(ABCMeta):
+    def __new__(cls, clsname, superclasses, attributedict):
+        attrs = {"__no_proxy__": set(), "__proxy__": set()}
 
-    @staticmethod
-    def noproxy(func):
-        decorators._NOPROXY.add(func)
-        return func
+        for superclass in superclasses:
+            if not hasattr(superclass, "__proxy__"):
+                continue
 
-    @staticmethod
-    def proxy(f):
-        setattr(f, decorators._PROXY_ATTR, True)
-        return f
+            attrs["__no_proxy__"].update(superclass.__no_proxy__)
+            attrs["__proxy__"].update(superclass.__proxy__)
 
-    @staticmethod
-    def proxied(f):
-        return getattr(f, decorators._PROXY_ATTR, False)
+        for key, value in attributedict.items():
+            if key in ("__proxy__", "__no_proxy__"):
+                continue
+            if isinstance(value, decorators.NoProxyFunction):
+                value = value.func
+                attrs["__no_proxy__"].add(key)
+            elif isinstance(value, decorators.ProxyFunction):
+                value = value.func
+                attrs["__proxy__"].add(key)
+
+            attrs[key] = value
+
+        instance = super(RouteMeta, cls).__new__(
+            cls, clsname, superclasses, attrs
+        )
+
+        for key, value in attrs.items():
+            if not callable(value):
+                continue
+
+            if instance.__is_method_allowed__(key, value) is True:
+                instance.__proxy__.add(key)
+            elif instance.__is_method_masked__(key, value) is True:
+                instance.__no_proxy__.add(key)
+
+        for key in ("__no_proxy__", "__proxy__"):
+            setattr(instance, key, frozenset(getattr(instance, key)))
+
+        return instance
 
 
-class AbstractRoute(ABC):
+class RouteBase(metaclass=RouteMeta):
+    __proxy__ = MappingProxyType({})
+    __no_proxy__ = MappingProxyType({})
 
-    def __init__(self, obj: 'handler.WebSocketBase'):
-        self.socket = obj
+    def __init__(self, obj):
+        self.__socket = obj
+        self.__loop = getattr(self.socket, "_loop", None)
+
+        if self.__loop is None:
+            self.__loop = asyncio.get_event_loop()
+
+    @property
+    def socket(self) -> "WebSocketBase":  # noqa
+        return self.__socket
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
-        return self.socket._loop  # noqa
+        return self.__loop
 
     def _onclose(self):
         pass
 
-    @abstractmethod
-    def proxy(self, method):
-        raise NotImplementedError
-
-    def _resolve(self, method):
-        if method.startswith('_'):
-            raise AttributeError('Trying to get private method.')
-
-        if hasattr(self, method) and self.proxy(method):
-            return getattr(self, method)
-        else:
-            raise NotImplementedError('Method not implemented')
-
-
-class Route(AbstractRoute):
-
-    @abstractmethod
-    def proxy(self, method):
-        func = getattr(self, method)
-        return decorators.proxied(func)
-
-    @decorators.proxy
-    def placebo(self, *args, **kwargs):
-        log.debug("PLACEBO IS CALLED!!! args: %r, kwargs: %r", args, kwargs)
-
-
-class LegacyRoute(Route):
-    _NOPROXY = []
+    @classmethod
+    def __is_method_allowed__(cls, name, func):
+        return None
 
     @classmethod
+    def __is_method_masked__(cls, name, func):
+        return None
+
+
+class Route(RouteBase):
+    def _method_lookup(self, method):
+        if method in self.__no_proxy__:
+            raise NotImplementedError("Method masked")
+
+        if method in self.__proxy__:
+            return getattr(self, method)
+
+        raise NotImplementedError("Method not implemented")
+
+    @classmethod
+    def __is_method_masked__(cls, name, func):
+        if name.startswith("_"):
+            return True
+
+    def __call__(self, method):
+        return self._method_lookup(method)
+
+
+class AllowedRoute(Route):
+    @classmethod
+    def __is_method_allowed__(cls, name, func):
+        if name.startswith("_"):
+            return False
+        return True
+
+
+class PrefixRoute(Route):
+    PREFIX = "rpc_"
+
+    @classmethod
+    def __is_method_allowed__(cls, name, func):
+        if name.startswith("rpc_"):
+            return True
+        return False
+
+    def _method_lookup(self, method):
+        return super()._method_lookup(self.PREFIX + method)
+
+
+class WebSocketRoute(AllowedRoute):
+    @classmethod
     def noproxy(cls, func):
-        def wrap(*args, **kwargs):
-            if func not in cls._NOPROXY:
-                cls._NOPROXY.append(func)
-                wrap(*args, **kwargs)
-
-            return func(*args, **kwargs)
-        return wrap
-
-    @abstractmethod
-    def proxy(self, method):
-        func = getattr(self, method)
-        return not (func in decorators._NOPROXY)
-
-
-WebSocketRoute = LegacyRoute
+        return decorators.noproxy(func)
 
 
 __all__ = (
-    'AbstractRoute', 'Route',
-    'WebSocketRoute', 'LegacyRoute', 'decorators',
+    "RouteBase",
+    "Route",
+    "WebSocketRoute",
+    "AllowedRoute",
+    "decorators",
 )

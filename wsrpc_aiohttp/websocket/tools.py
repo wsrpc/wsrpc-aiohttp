@@ -1,7 +1,8 @@
+import asyncio
 import base64
-from functools import singledispatch
-
+from functools import singledispatch, wraps
 from json import dumps as _dumps
+
 
 try:
     from ujson import loads
@@ -10,7 +11,7 @@ except ImportError:
 
 
 class Lazy:
-    __slots__ = 'func',
+    __slots__ = ("func",)
 
     def __init__(self, func):
         self.func = func
@@ -42,7 +43,7 @@ def serializer(value):
     raise ValueError("Can not serialize %r" % type(value))
 
 
-@serializer.register(bytes)     # noqa: W0404
+@serializer.register(bytes)  # noqa: W0404
 def _(value):
     return base64.b64encode(value).decode()
 
@@ -51,4 +52,44 @@ def dumps(obj):
     return _dumps(obj, default=serializer)
 
 
-__all__ = ('dumps', 'loads', 'Lazy')
+class SingletonMeta(type):
+    def __new__(cls, clsname, superclasses, attributedict):
+        klass = type.__new__(cls, clsname, superclasses, attributedict)
+        klass.__instance__ = None
+        return klass
+
+
+class Singleton(metaclass=SingletonMeta):
+    def __new__(cls, *args, **kwargs):
+        if not cls.__instance__:
+            cls.__instance__ = super(Singleton, cls).__new__(cls)
+        return cls.__instance__
+
+
+def awaitable(func):
+    if asyncio.iscoroutinefunction(func):
+        return func
+
+    @wraps(func)
+    async def wrap(*args, **kwargs):
+        result = func(*args, **kwargs)
+
+        is_awaitable = (
+            asyncio.iscoroutine(result)
+            or asyncio.isfuture(result)
+            or hasattr(result, "__await__")
+        )
+        if is_awaitable:
+            return await result
+        return result
+
+    return wrap
+
+
+__all__ = (
+    "Lazy",
+    "Singleton",
+    "awaitable",
+    "dumps",
+    "loads",
+)

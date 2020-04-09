@@ -1,4 +1,5 @@
 import asyncio
+
 from wsrpc_aiohttp import WSRPCClient
 
 
@@ -13,5 +14,5 @@ async def main():
     await client.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop.run_until_complete(main())

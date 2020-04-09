@@ -69,15 +69,18 @@ In this case socket instance will store an initialized instance of
 this class and instance appears after first route call.
 
 .. code-block:: python
+    from wsrpc_aiohttp import decorators
 
-    class Storage(WebSocketRoute):
+    class Storage(Route):
         async def init(self):
             """ method which will be called after the first route call """
             self._internal = dict()
 
+        @decorators.proxy
         async def get(self, key, default=None):
             return self._internal.get(key, default)
 
+        @decorators.proxy
         async def set(self, key, value):
             self._internal[key] = value
             return True
