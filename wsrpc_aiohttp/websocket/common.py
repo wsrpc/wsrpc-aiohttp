@@ -180,7 +180,7 @@ class WSRPCBase:
                     args, kwargs = self.prepare_args(call_item.params)
 
                     return await self.handle_method(
-                        call_item.method, call_item.serial, *args, **kwargs
+                        call_item.method, call_item.serial, args, kwargs
                     )
             elif not isinstance(call_item.result, Nothing):
                 return await self.handle_result(
@@ -277,7 +277,7 @@ class WSRPCBase:
     def is_route(func):
         return hasattr(func, "__self__") and isinstance(func.__self__, Route)
 
-    async def handle_method(self, method, serial, *args, **kwargs):
+    async def handle_method(self, method, serial, args, kwargs):
         callee = self.resolver(method)
 
         if not self.is_route(callee):

@@ -223,3 +223,17 @@ async def test_call_timeout(client: WSRPCClient, handler: WebSocketAsync):
 
         with pytest.raises(ClientException):
             await client.proxy.will_sleep_for(seconds=1)
+
+
+async def test_method_kwarg(client: WSRPCClient, handler: WebSocketAsync):
+    test_value = 123
+
+    def test_me(_, method):
+        assert method == test_value
+        return method
+
+    handler.add_route("test_me", test_me)
+
+    async with client:
+        response = await client.proxy.test_me(method=test_value)
+        assert response == test_value
