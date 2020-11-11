@@ -12,7 +12,7 @@ from . import decorators
 from .abc import (
     Proxy, AbstactWSRPC, FrameMappingItemType, RouteType, EventListenerType
 )
-from .route import Route, ProxyCollectionType
+from .route import Route
 from .tools import Singleton, awaitable, loads
 
 
