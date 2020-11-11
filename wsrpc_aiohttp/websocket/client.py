@@ -1,5 +1,5 @@
 import logging
-from typing import Union
+from typing import Union, Optional
 
 import aiohttp
 from yarl import URL
@@ -9,6 +9,7 @@ from .tools import Lazy, awaitable, dumps
 
 
 log = logging.getLogger(__name__)
+SocketType = Optional[aiohttp.ClientWebSocketResponse]
 
 
 class WSRPCClient(WSRPCBase):
@@ -29,9 +30,10 @@ class WSRPCClient(WSRPCBase):
             loop=self._loop, **kwargs
         )
 
-        self.socket = None  # type: aiohttp.ClientWebSocketResponse
+        self.socket = None   # type: SocketType
         self.closed = False
 
+    # noinspection PyMethodOverriding
     async def close(self):
         """ Close the client connect connection """
 

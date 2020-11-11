@@ -35,11 +35,12 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     long_description=open("README.rst").read(),
     packages=find_packages(exclude=["tests", "doc"]),
-    package_data={"wsrpc_aiohttp": ["static/*"]},
+    package_data={"wsrpc_aiohttp": ["static/*", "py.typed"]},
     install_requires=["aiohttp<4", "yarl"],
     python_requires=">3.5.*, <4",
     extras_require={

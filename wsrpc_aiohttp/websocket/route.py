@@ -2,9 +2,10 @@ import asyncio
 import logging
 from abc import ABCMeta
 from types import MappingProxyType
+from typing import Any, Callable, Mapping
 
 from . import decorators
-
+from .abc import AbstractRoute, AbstractWebSocket
 
 log = logging.getLogger("wsrpc")
 
@@ -52,9 +53,12 @@ class RouteMeta(ABCMeta):
         return instance
 
 
-class RouteBase(metaclass=RouteMeta):
-    __proxy__ = MappingProxyType({})
-    __no_proxy__ = MappingProxyType({})
+ProxyCollectionType = Mapping[str, Callable[..., Any]]
+
+
+class RouteBase(AbstractRoute, metaclass=RouteMeta):
+    __proxy__ = MappingProxyType({})        # type: ProxyCollectionType
+    __no_proxy__ = MappingProxyType({})     # type: ProxyCollectionType
 
     def __init__(self, obj):
         self.__socket = obj
@@ -64,7 +68,7 @@ class RouteBase(metaclass=RouteMeta):
             self.__loop = asyncio.get_event_loop()
 
     @property
-    def socket(self) -> "WebSocketBase":  # noqa
+    def socket(self) -> AbstractWebSocket:
         return self.__socket
 
     @property
