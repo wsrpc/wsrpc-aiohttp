@@ -80,7 +80,7 @@ Backend code:
     from time import time
 
     import aiohttp.web
-    from wsrpc_aiohttp import WebSocketAsync, STATIC_DIR, WebSocketRoute, decorators
+    from wsrpc_aiohttp import Route, STATIC_DIR, WebSocketRoute, decorators
 
 
     log = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ Backend code:
 
     # This class can be called by client.
     # Connection object will have this class instance after calling route-alias.
-    class TestRoute(WebSocketRoute):
+    class TestRoute(Route):
         # This method will be executed when client calls route-alias
         # for the first time.
         def init(self, **kwargs):
