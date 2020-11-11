@@ -80,7 +80,7 @@ Backend code:
     from time import time
 
     import aiohttp.web
-    from wsrpc_aiohttp import WebSocketAsync, STATIC_DIR, WebSocketRoute
+    from wsrpc_aiohttp import WebSocketAsync, STATIC_DIR, WebSocketRoute, decorators
 
 
     log = logging.getLogger(__name__)
@@ -97,6 +97,7 @@ Backend code:
             return kwargs
 
         # This method named by camelCase because the client can call it.
+        @decorators.proxy
         async def getEpoch(self):
 
             # You can execute functions on the client side
@@ -105,6 +106,7 @@ Backend code:
             return time()
 
         # This method calls function on the client side
+        @decorators.proxy
         async def do_notify(self):
             awesome = 'Somebody executed test1.getEpoch method!'
             await self.socket.call('notify', result=awesome)
