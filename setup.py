@@ -41,7 +41,7 @@ setup(
     long_description=open("README.rst").read(),
     packages=find_packages(exclude=["tests", "doc"]),
     package_data={"wsrpc_aiohttp": ["static/*", "py.typed"]},
-    install_requires=["aiohttp<4", "yarl"],
+    install_requires=["aiohttp<3.7", "yarl"],
     python_requires=">3.5.*, <4",
     extras_require={
         "ujson": ["ujson"],
