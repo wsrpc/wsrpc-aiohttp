@@ -18,6 +18,8 @@ jobs:
       matrix:
         linter:
           - lint
+          - checkdoc
+          - mypy
 
     steps:
       - uses: actions/checkout@v2
