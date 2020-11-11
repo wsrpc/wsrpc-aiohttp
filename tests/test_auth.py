@@ -29,3 +29,4 @@ async def test_auth_fail(client: WSRPCClient, handler):
 async def test_auth_ok(client: WSRPCClient, handler):
     handler.AUTHORIZE = True
     await client.connect()
+    await client.close()
