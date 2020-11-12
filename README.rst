@@ -1,9 +1,9 @@
 WSRPC aiohttp
 =============
 
-.. image:: https://cloud.drone.io/api/badges/wsrpc/wsrpc-aiohttp/status.svg
-    :target: https://cloud.drone.io/wsrpc/wsrpc-aiohttp
-    :alt: Drone CI
+.. image:: https://github.com/wsrpc/wsrpc-aiohttp/workflows/tests/badge.svg
+    :target: https://github.com/wsrpc/wsrpc-aiohttp/actions?query=branch%3Amaster
+    :alt: Github Actions
 
 .. image:: https://coveralls.io/repos/github/wsrpc/wsrpc-aiohttp/badge.svg?branch=master
     :target: https://coveralls.io/github/wsrpc/wsrpc-aiohttp?branch=master
