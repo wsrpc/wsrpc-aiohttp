@@ -5,9 +5,9 @@ from json import dumps as _dumps
 
 
 try:
-    from ujson import loads
+    from ujson import loads     # type: ignore
 except ImportError:
-    from json import loads
+    from json import loads      # type: ignore
 
 
 class Lazy:

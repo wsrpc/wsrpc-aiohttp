@@ -3,22 +3,15 @@ import asyncio
 import logging
 import types
 from collections import defaultdict
-from enum import IntEnum
 from functools import partial
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Union,
-)
+import typing as t
 
 import aiohttp
 
 from . import decorators
+from .abc import (
+    Proxy, AbstactWSRPC, FrameMappingItemType, RouteType, EventListenerType
+)
 from .route import Route
 from .tools import Singleton, awaitable, loads
 
@@ -45,56 +38,45 @@ def ping(_, **kwargs):
 
 
 log = logging.getLogger(__name__)
-RouteType = Union[Callable[["WSRPCBase", Any], Any], Route]
-FrameMappingItemType = Mapping[IntEnum, Callable[[aiohttp.WSMessage], Any]]
-
-
-class _ProxyMethod:
-    __slots__ = "__call", "__name"
-
-    def __init__(self, call_method, name):
-        self.__call = call_method
-        self.__name = name
-
-    def __call__(self, **kwargs):
-        return self.__call(self.__name, **kwargs)
-
-    def __getattr__(self, item: str):
-        return self.__class__(self.__call, ".".join((self.__name, item)))
-
-
-class _Proxy:
-    __slots__ = ("__call",)
-
-    def __init__(self, call_method):
-        self.__call = call_method
-
-    def __getattr__(self, item: str):
-        return _ProxyMethod(self.__call, item)
 
 
 class Nothing(Singleton):
     pass
 
 
-CallItem = NamedTuple(
+CallItem = t.NamedTuple(
     "CallItem",
     (
-        ("serial", int),
-        ("method", Union[Nothing, Optional[str]]),
-        ("error", Union[Nothing, Any]),
-        ("result", Union[Nothing, Any]),
-        ("params", Optional[Union[List, Dict]]),
+        ("serial", t.Optional[int]),
+        ("method", t.Union[Nothing, str, None]),
+        ("error", t.Union[Nothing, t.Any]),
+        ("result", t.Union[Nothing, t.Any]),
+        ("params", t.Optional[t.Union[t.List, t.Dict]]),
     ),
 )
 
 
-class WSRPCBase:
+RouteCollectionType = t.DefaultDict[
+    t.Type[AbstactWSRPC], t.Dict[str, RouteType]
+]
+ClientCollectionType = t.DefaultDict[
+    t.Type[AbstactWSRPC], t.Dict[str, AbstactWSRPC]
+]
+LocksCollectionType = t.DefaultDict[int, asyncio.Lock]
+FutureCollectionType = t.DefaultDict[int, asyncio.Future]
+EventListenerCollectionType = t.Set[EventListenerType]
+
+
+def _route_maker() -> t.Dict[str, RouteType]:
+    return {"ping": ping}   # type: ignore
+
+
+class WSRPCBase(AbstactWSRPC):
     """ Common WSRPC abstraction """
 
-    _ROUTES = defaultdict(lambda: {"ping": ping})
-    _CLIENTS = defaultdict(dict)
-    _CLEAN_LOCK_TIMEOUT = 2
+    _ROUTES = defaultdict(_route_maker)       # type: RouteCollectionType
+    _CLIENTS = defaultdict(dict)              # type: ClientCollectionType
+    _CLEAN_LOCK_TIMEOUT = 2                   # type: t.Union[int, float]
 
     __slots__ = (
         "_handlers",
@@ -108,15 +90,18 @@ class WSRPCBase:
         "_message_type_mapping",
     )
 
-    def __init__(self, loop: asyncio.AbstractEventLoop = None, timeout=None):
+    def __init__(self, loop: asyncio.AbstractEventLoop = None,
+                 timeout: t.Union[int, float] = None):
         self._loop = loop or asyncio.get_event_loop()
-        self._handlers = {}
-        self._pending_tasks = set()
+        self._handlers = {}                 # type: t.Dict[str, RouteType]
+        self._pending_tasks = set()         # type: t.Set[asyncio.Task]
         self._serial = 0
         self._timeout = timeout
-        self._locks = defaultdict(asyncio.Lock)
-        self._futures = defaultdict(self._loop.create_future)
-        self._event_listeners = set()
+        self._locks = defaultdict(asyncio.Lock)     # type: LocksCollectionType
+        self._futures = defaultdict(
+            self._loop.create_future
+        )   # type: FutureCollectionType
+        self._event_listeners = set()       # type: EventListenerCollectionType
         self._message_type_mapping = self._create_type_mapping()
 
     def _create_type_mapping(self) -> FrameMappingItemType:
@@ -172,7 +157,7 @@ class WSRPCBase:
 
     async def _call_method(self, call_item: CallItem):
         try:
-            if not isinstance(call_item.method, Nothing):
+            if not isinstance(call_item.method, Nothing) and call_item.serial:
                 log.debug(
                     "Acquiring lock for %r serial %r", self, call_item.serial
                 )
@@ -207,12 +192,30 @@ class WSRPCBase:
 
     @staticmethod
     def _parse_message(data: dict) -> CallItem:
+        message_id = data.get("id")     # type: t.Optional[int]
+
+        if message_id and not isinstance(message_id, int):
+            raise ValueError
+
+        message_method = data.get(
+            "method", Nothing()
+        )  # type: t.Union[str, Nothing, None]
+
+        message_result = data.get(
+            "result", Nothing()
+        )  # type: t.Union[str, Nothing, None]
+
+        message_error = data.get(
+            "error", Nothing()
+        )  # type: t.Union[str, Nothing, None]
+
+        message_params = data.get(
+            "params", Nothing()
+        )  # type: t.Union[t.List[t.Any], t.Dict[t.Any, t.Any], None]
+
         return CallItem(
-            serial=data.get("id"),
-            method=data.get("method", Nothing()),
-            result=data.get("result", Nothing()),
-            error=data.get("error", Nothing()),
-            params=data.get("params"),
+            serial=message_id, method=message_method, result=message_result,
+            error=message_error, params=message_params,
         )
 
     async def handle_message(self, message: aiohttp.WSMessage):
@@ -236,20 +239,20 @@ class WSRPCBase:
         self._create_task(awaitable(handler)(msg))
 
     @classmethod
-    def get_routes(cls) -> Dict[str, RouteType]:
+    def get_routes(cls) -> t.Dict[str, RouteType]:
         return cls._ROUTES[cls]
 
     @classmethod
-    def get_clients(cls) -> Dict[str, "WSRPCBase"]:
+    def get_clients(cls) -> t.Dict[str, AbstactWSRPC]:
         return cls._CLIENTS[cls]
 
     @property
-    def routes(self) -> Dict[str, RouteType]:
+    def routes(self) -> t.Dict[str, RouteType]:
         """ Property which contains the socket routes """
         return self.get_routes()
 
     @property
-    def clients(self) -> Dict[str, "WSRPCBase"]:
+    def clients(self) -> t.Dict[str, AbstactWSRPC]:
         """ Property which contains the socket clients """
         return self.get_clients()
 
@@ -417,7 +420,7 @@ class WSRPCBase:
         await self._send(**event)
 
     @classmethod
-    def add_route(cls, route: str, handler: Union[Route, Callable]):
+    def add_route(cls, route: str, handler: RouteType):
         """ Expose local function through RPC
 
         :param route: Name which function will be aliased for this function.
@@ -443,7 +446,7 @@ class WSRPCBase:
 
         cls.get_routes()[route] = handler
 
-    def add_event_listener(self, func: Callable[[dict], Any]):
+    def add_event_listener(self, func: t.Callable[[dict], t.Any]):
         self._event_listeners.add(func)
 
     def remove_event_listeners(self, func):
@@ -482,7 +485,7 @@ class WSRPCBase:
             # full equivalent of
             await client.call('ping')
         """
-        return _Proxy(self.call)
+        return Proxy(self.call)
 
 
 __all__ = ("Route", "WSRPCBase", "ClientException", "WSRPCError")
