@@ -5,7 +5,7 @@ package_license = "Apache Software License"
 
 team_email = "me@mosquito.su"
 
-version_info = (3, 1, 0)
+version_info = (3, 1, 1)
 
 
 __author__ = ", ".join("{} <{}>".format(*info) for info in author_info)
