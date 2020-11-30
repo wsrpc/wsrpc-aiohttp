@@ -60,8 +60,9 @@ class RouteBase(AbstractRoute, metaclass=RouteMeta):
     __proxy__ = MappingProxyType({})        # type: ProxyCollectionType
     __no_proxy__ = MappingProxyType({})     # type: ProxyCollectionType
 
-    def __init__(self, obj):
-        self.__socket = obj
+    def __init__(self, socket: AbstractWebSocket):
+        super().__init__(socket)
+        self.__socket = socket
         self.__loop = getattr(self.socket, "_loop", None)
 
         if self.__loop is None:
