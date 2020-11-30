@@ -132,6 +132,24 @@ async def test_call(
         assert response == data[::-1]
 
 
+async def test_call_when_params_none(
+    client: WSRPCClient, handler: WebSocketAsync, route: Route
+):
+    async with client:
+        handler.add_route("reverse", route)
+
+        data = str(uuid.uuid4())
+
+        await client.proxy.reverse(data=data)
+        await client.socket.send_json(
+            data={"id": 80, "method": "reverse.reverse"}
+        )
+
+        response = await client.proxy.reverse.get_data()
+
+        assert response == data[::-1]
+
+
 async def test_broadcast(
     client: WSRPCClient, handler: WebSocketAsync, route: Route, loop
 ):

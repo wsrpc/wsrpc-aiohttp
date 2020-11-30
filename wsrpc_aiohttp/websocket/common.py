@@ -41,7 +41,8 @@ log = logging.getLogger(__name__)
 
 
 class Nothing(Singleton):
-    pass
+    def __repr__(self):
+        return self.__class__.__name__
 
 
 CallItem = t.NamedTuple(
@@ -210,7 +211,7 @@ class WSRPCBase(AbstactWSRPC):
         )  # type: t.Union[str, Nothing, None]
 
         message_params = data.get(
-            "params", Nothing()
+            "params", None
         )  # type: t.Union[t.List[t.Any], t.Dict[t.Any, t.Any], None]
 
         return CallItem(
