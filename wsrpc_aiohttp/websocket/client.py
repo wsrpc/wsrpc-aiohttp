@@ -1,4 +1,5 @@
 import logging
+from asyncio import Lock
 from typing import Union, Optional
 
 import aiohttp
@@ -29,6 +30,7 @@ class WSRPCClient(WSRPCBase):
         self._session = session or aiohttp.ClientSession(
             loop=self._loop, **kwargs
         )
+        self.send_lock = Lock()
 
         self.socket = None   # type: SocketType
         self.closed = False
@@ -74,9 +76,10 @@ class WSRPCClient(WSRPCBase):
             if self.socket.closed:
                 raise aiohttp.ClientConnectionError("Connection was closed.")
 
-            return await self.socket.send_json(
-                kwargs, dumps=lambda x: dumps(x)
-            )
+            async with self.send_lock:
+                return await self.socket.send_json(
+                    kwargs, dumps=lambda x: dumps(x)
+                )
         except aiohttp.WebSocketError:
             self._loop.create_task(self.close())
             raise
