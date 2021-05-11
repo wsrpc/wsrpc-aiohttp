@@ -138,7 +138,7 @@ Frontend code:
 
     <script type="text/javascript" src="/js/wsrpc.min.js"></script>
     <script>
-        var url = (window.location.protocol==="https):"?"wss://":"ws://") + window.location.host + '/ws/';
+        var url = (window.location.protocol==="https:"?"wss://":"ws://") + window.location.host + '/ws/';
         RPC = new WSRPC(url, 8000);
 
         // Configure client API, that can be called from server
