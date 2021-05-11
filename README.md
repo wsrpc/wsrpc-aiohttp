@@ -106,12 +106,14 @@ asyncio.run(round_trip())
 
 ## Call it from a browser
 
-Load the bundled script from the server's `/js/` route, then call the same method:
+For a page served by the same application, load the bundled script from `/js/` and call the same method:
 
 ```html
-<script src="http://127.0.0.1:8000/js/wsrpc.min.js"></script>
+<script src="/js/wsrpc.min.js"></script>
 <script>
-  const rpc = new WSRPC("ws://127.0.0.1:8000/ws/");
+  const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const url = scheme + "//" + window.location.host + "/ws/";
+  const rpc = new WSRPC(url);
   rpc.connect();
   rpc.call("echo", {message: "Hello from JavaScript"})
     .then(console.log)
@@ -119,7 +121,7 @@ Load the bundled script from the server's `/js/` route, then call the same metho
 </script>
 ```
 
-For an HTTPS page, use an HTTPS script URL and a `wss://` WebSocket URL. A complete browser example is in [the quick start](https://wsrpc.readthedocs.io/en/latest/00-quick-start.html).
+The example selects `wss://` on HTTPS pages and `ws://` on HTTP pages. A complete browser example is in [the quick start](https://wsrpc.readthedocs.io/en/latest/00-quick-start.html).
 
 ## JSON codecs
 
