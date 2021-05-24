@@ -2,6 +2,6 @@ recursive-exclude tests *
 recursive-exclude __pycache__ *
 exclude .*
 
-include README.rst
+include README.md
 include wsrpc_aiohttp/py.typed
 recursive-include wsrpc_aiohttp/static

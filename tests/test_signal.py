@@ -164,3 +164,4 @@ class TestSuiteCallProcedureSignals:
         assert call_started
         assert call_fail
         assert call_fail_args["method"] == "proc_fail"
+        assert isinstance(call_fail_args["err"], RuntimeError)

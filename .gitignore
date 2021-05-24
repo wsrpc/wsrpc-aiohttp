@@ -136,7 +136,6 @@ fabric.properties
 /htmlcov
 /temp
 .DS_Store
-README.md
 
 *.min.js
 *.min.js.map
