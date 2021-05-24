@@ -82,7 +82,6 @@ class TestSuiteAuthSignals:
 
         async def on_auth_success(socket, request):
             nonlocal auth_success
-            nonlocal auth_success_args
             auth_success = True
 
         handler.allow_authorize = True
