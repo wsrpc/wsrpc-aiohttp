@@ -29,5 +29,6 @@ upload_doc: build_doc
 doc: upload_doc
 
 develop:
-	virtualenv $(VENV)
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install -U pip
 	$(VENV)/bin/pip install -Ue ".[develop]"

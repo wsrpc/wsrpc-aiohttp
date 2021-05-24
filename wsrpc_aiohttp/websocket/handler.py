@@ -10,6 +10,7 @@ from aiohttp import WebSocketError, web
 from aiohttp.abc import AbstractView
 
 from .common import ClientException, WSRPCBase
+from wsrpc_aiohttp.signal import Signal
 from .tools import Lazy, awaitable, dumps
 
 
@@ -36,6 +37,11 @@ class WebSocketBase(WSRPCBase, AbstractView):
     CLIENT_TIMEOUT = int(KEEPALIVE_PING_TIMEOUT / 3)  # type: int
     MAX_CONCURRENT_REQUESTS = 25  # type: int
     REQUEST_EXECUTION_TIMEOUT = None  # type: int
+
+    ON_AUTH_SUCCESS = Signal()
+    ON_AUTH_FAIL = Signal()
+    ON_CONN_OPEN = Signal()
+    ON_CONN_CLOSE = Signal()
 
     def __init__(self, request):
         AbstractView.__init__(self, request)
@@ -66,6 +72,22 @@ class WebSocketBase(WSRPCBase, AbstractView):
         cls.CLIENT_TIMEOUT = client_timeout
         cls.MAX_CONCURRENT_REQUESTS = max_concurrent_requests
 
+    @classmethod
+    def freeze(cls):
+        """ Freeze all signals """
+        for signal in (
+            cls.ON_AUTH_SUCCESS,
+            cls.ON_AUTH_FAIL,
+            cls.ON_CONN_OPEN,
+            cls.ON_CONN_CLOSE,
+            cls.ON_CALL_START,
+            cls.ON_CALL_SUCCESS,
+            cls.ON_CALL_FAIL,
+        ):
+            signal: Signal
+            if not signal.is_frozen:
+                signal.freeze()
+
     def __await__(self):
         return self.__handle_request().__await__()
 
@@ -88,8 +110,19 @@ class WebSocketBase(WSRPCBase, AbstractView):
     async def __handle_request(self):
         self.socket = web.WebSocketResponse()
 
+        await self.ON_CONN_OPEN.call(socket=self.socket, request=self.request)
+
         if not await self.authorize():
+            await self.ON_AUTH_FAIL.call(
+                socket=self.socket,
+                request=self.request,
+            )
             raise web.HTTPForbidden()
+
+        await self.ON_AUTH_SUCCESS.call(
+            socket=self.socket,
+            request=self.request,
+        )
 
         await self.socket.prepare(self.request)
 
@@ -112,6 +145,10 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
             return self.socket
         finally:
+            await self.ON_CONN_CLOSE.call(
+                socket=self.socket,
+                request=self.request,
+            )
             await self.close()
 
     @classmethod
