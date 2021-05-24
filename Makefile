@@ -1,10 +1,10 @@
 VENV = env
 
 sdist:
-	python3 setup.py sdist bdist_wheel
+	$(VENV)/bin/python -m build
 
 release: build_js sdist upload_doc
-	twine upload dist/*$(shell python3 setup.py --version)*
+	$(VENV)/bin/python -m twine upload dist/*$(shell python3 setup.py --version)*
 
 build_js:
 	for fname in wsrpc.d.ts wsrpc.es6.js; do \
@@ -30,5 +30,5 @@ doc: upload_doc
 
 develop:
 	python3 -m venv $(VENV)
-	$(VENV)/bin/pip install -U pip
+	$(VENV)/bin/pip install -U pip build twine
 	$(VENV)/bin/pip install -Ue ".[develop]"
