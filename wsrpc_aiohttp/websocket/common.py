@@ -303,13 +303,6 @@ class WSRPCBase(AbstactWSRPC):
         func = partial(callee, *args, **kwargs)
         try:
             result = await self._executor(func)
-            await self.ON_CALL_SUCCESS.call(
-                method=method,
-                serial=serial,
-                args=args,
-                kwargs=kwargs,
-                result=result,
-            )
         except Exception as err:
             await self.ON_CALL_FAIL.call(
                 method=method,
@@ -319,6 +312,15 @@ class WSRPCBase(AbstactWSRPC):
                 err=err,
             )
             raise
+
+        await self.ON_CALL_SUCCESS.call(
+            method=method,
+            serial=serial,
+            args=args,
+            kwargs=kwargs,
+            result=result,
+        )
+
         await self._send(result=result, id=serial)
 
     async def handle_result(self, serial, result):

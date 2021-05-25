@@ -1,4 +1,8 @@
+import logging
 import inspect
+
+
+log = logging.getLogger(__name__)
 
 
 class Signal:
@@ -22,7 +26,10 @@ class Signal:
 
     async def call(self, *args, **kwargs):
         for receiver in self._receivers:
-            await receiver(*args, **kwargs)
+            try:
+                await receiver(*args, **kwargs)
+            except Exception:
+                log.exception("Exception in signal handler")
 
     def copy(self):
         clone = Signal()
