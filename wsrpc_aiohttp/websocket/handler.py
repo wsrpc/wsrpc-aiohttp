@@ -83,8 +83,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
             cls.ON_CALL_START,
             cls.ON_CALL_SUCCESS,
             cls.ON_CALL_FAIL,
-        ):
-            signal: Signal
+        ):  # type: Signal
             if not signal.is_frozen:
                 signal.freeze()
 
