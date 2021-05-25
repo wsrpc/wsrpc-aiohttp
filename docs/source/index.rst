@@ -58,6 +58,7 @@ Features
 * Protected server-side methods (starts with underline never will be call
   from clients-side directly)
 * If `ujson`_ is installed messages will be serialize/deserialize with it.
+* Introspection with signals
 
 
 Installation
