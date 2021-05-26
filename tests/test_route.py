@@ -102,23 +102,21 @@ def test_is_method_allowed():
     assert "foobar" not in FooRoute.__no_proxy__
 
 
-def test_route__init__(loop):
+async def test_route__init__(event_loop):
     socket = Mock()
-    socket._loop = object()
-
     route = Route(socket)
 
     assert route.socket is socket
-    assert route.loop is socket._loop
+    assert route.loop is event_loop
 
     socket = object()
     route = Route(socket)
 
     assert route.socket is socket
-    assert route.loop is loop
+    assert route.loop is event_loop
 
 
-def test_abc_inheritance(loop):
+def test_abc_inheritance(event_loop):
     class AbstractMixin(ABC):
         @abstractmethod
         def foo(self):

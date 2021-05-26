@@ -151,10 +151,10 @@ async def test_call_when_params_none(
 
 
 async def test_broadcast(
-    client: WSRPCClient, handler: WebSocketAsync, route: Route, loop
+    client: WSRPCClient, handler: WebSocketAsync, route: Route, event_loop
 ):
     async with client:
-        future = loop.create_future()
+        future = event_loop.create_future()
 
         async def on_broadcast(_, result):
             nonlocal future
@@ -229,7 +229,7 @@ async def test_call_method(client: WSRPCClient, handler: WebSocketAsync):
 
 async def test_call_timeout(client: WSRPCClient, handler: WebSocketAsync):
     async def will_sleep_for(_, seconds):
-        with timeout(0.5):
+        async with timeout(0.5):
             await asyncio.sleep(seconds)
             return DATA_TO_RETURN
 

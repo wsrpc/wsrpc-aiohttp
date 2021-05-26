@@ -2,7 +2,7 @@ import asyncio
 import logging
 from abc import ABCMeta
 from types import MappingProxyType
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Optional
 
 from . import decorators
 from .abc import AbstractRoute, AbstractWebSocket
@@ -63,10 +63,7 @@ class RouteBase(AbstractRoute, metaclass=RouteMeta):
     def __init__(self, socket: AbstractWebSocket):
         super().__init__(socket)
         self.__socket = socket
-        self.__loop = getattr(self.socket, "_loop", None)
-
-        if self.__loop is None:
-            self.__loop = asyncio.get_event_loop()
+        self.__loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def socket(self) -> AbstractWebSocket:
@@ -74,6 +71,8 @@ class RouteBase(AbstractRoute, metaclass=RouteMeta):
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
+        if self.__loop is None:
+            self.__loop = asyncio.get_running_loop()
         return self.__loop
 
     def _onclose(self):
