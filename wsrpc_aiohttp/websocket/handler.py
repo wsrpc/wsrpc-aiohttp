@@ -42,6 +42,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
     ON_AUTH_FAIL = Signal()
     ON_CONN_OPEN = Signal()
     ON_CONN_CLOSE = Signal()
+    ON_CONN_FAIL = Signal()
 
     def __init__(self, request):
         AbstractView.__init__(self, request)
@@ -80,6 +81,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
             cls.ON_AUTH_FAIL,
             cls.ON_CONN_OPEN,
             cls.ON_CONN_CLOSE,
+            cls.ON_CONN_FAIL,
             cls.ON_CALL_START,
             cls.ON_CALL_SUCCESS,
             cls.ON_CALL_FAIL,
@@ -123,7 +125,15 @@ class WebSocketBase(WSRPCBase, AbstractView):
             request=self.request,
         )
 
-        await self.socket.prepare(self.request)
+        try:
+            await self.socket.prepare(self.request)
+        except Exception as err:
+            await self.ON_CONN_FAIL.call(
+                socket=self.socket,
+                request=self.request,
+                err=err,
+            )
+            raise
 
         try:
             self.clients[self.id] = self

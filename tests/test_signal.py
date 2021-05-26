@@ -1,6 +1,6 @@
 import pytest
 
-from aiohttp import WSServerHandshakeError
+from aiohttp import ClientConnectionError, WSServerHandshakeError
 
 from wsrpc_aiohttp import ClientException, WebSocketAsync
 from wsrpc_aiohttp.signal import Signal
@@ -165,3 +165,30 @@ class TestSuiteCallProcedureSignals:
         assert call_fail
         assert call_fail_args["method"] == "proc_fail"
         assert isinstance(call_fail_args["err"], RuntimeError)
+
+
+async def test_on_conn_fail_signal(client, handler, monkeypatch):
+    conn_fail = False
+    conn_err = None
+
+    async def on_conn_fail(socket, request, err):
+        nonlocal conn_fail
+        nonlocal conn_err
+        conn_fail = True
+        conn_err = err
+
+    handler.ON_CONN_FAIL.connect(on_conn_fail)
+
+    async def prepare_mock(*args, **kwargs):
+        raise RuntimeError("Prepare failed")
+
+    monkeypatch.setattr(
+        "wsrpc_aiohttp.websocket.handler.web.WebSocketResponse.prepare",
+        prepare_mock,
+    )
+    with pytest.raises(Exception):
+        async with client:
+            pass
+
+    assert conn_fail
+    assert isinstance(conn_err, RuntimeError)
