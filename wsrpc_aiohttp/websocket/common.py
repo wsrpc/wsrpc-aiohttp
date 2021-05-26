@@ -14,6 +14,7 @@ from .abc import (
 )
 from .route import Route
 from .tools import Singleton, awaitable, loads
+from wsrpc_aiohttp.signal import Signal
 
 
 class WSRPCError(Exception):
@@ -90,6 +91,10 @@ class WSRPCBase(AbstactWSRPC):
         "_event_listeners",
         "_message_type_mapping",
     )
+
+    ON_CALL_START = Signal()
+    ON_CALL_SUCCESS = Signal()
+    ON_CALL_FAIL = Signal()
 
     def __init__(self, loop: asyncio.AbstractEventLoop = None,
                  timeout: t.Union[int, float] = None):
@@ -282,6 +287,12 @@ class WSRPCBase(AbstactWSRPC):
         return hasattr(func, "__self__") and isinstance(func.__self__, Route)
 
     async def handle_method(self, method, serial, args, kwargs):
+        await self.ON_CALL_START.call(
+            method=method,
+            serial=serial,
+            args=args,
+            kwargs=kwargs,
+        )
         callee = self.resolver(method)
 
         if not self.is_route(callee):
@@ -290,7 +301,26 @@ class WSRPCBase(AbstactWSRPC):
             args = a
 
         func = partial(callee, *args, **kwargs)
-        result = await self._executor(func)
+        try:
+            result = await self._executor(func)
+        except Exception as err:
+            await self.ON_CALL_FAIL.call(
+                method=method,
+                serial=serial,
+                args=args,
+                kwargs=kwargs,
+                err=err,
+            )
+            raise
+
+        await self.ON_CALL_SUCCESS.call(
+            method=method,
+            serial=serial,
+            args=args,
+            kwargs=kwargs,
+            result=result,
+        )
+
         await self._send(result=result, id=serial)
 
     async def handle_result(self, serial, result):
