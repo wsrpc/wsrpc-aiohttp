@@ -1,6 +1,6 @@
 import pytest
 
-from aiohttp import ClientConnectionError, WSServerHandshakeError
+from aiohttp import WSServerHandshakeError
 
 from wsrpc_aiohttp import ClientException, WebSocketAsync
 from wsrpc_aiohttp.signal import Signal
