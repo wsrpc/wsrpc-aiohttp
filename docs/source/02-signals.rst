@@ -7,6 +7,7 @@ Signals allow to set callbacks on some events:
    establishing, before authentication
 -  ``ON_CONN_CLOSE(socket, request)`` - right before closing a
    connection
+-  ``ON_CONN_FAIL(socket, request, err)`` - on connection upgrade failure
 -  ``ON_AUTH_SUCCESS(socket, request)`` - after successfully
    authenticate new connection
 -  ``ON_AUTH_FAIL(socket, request)`` - on authentication failure
