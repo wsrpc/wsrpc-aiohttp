@@ -366,7 +366,7 @@ class WSRPCBase(AbstactWSRPC):
 
     def resolver(self, func_name):
         class_name, method = (
-            func_name.split(".", 1)
+            func_name.rsplit(".", 1)
             if "." in func_name
             else (func_name, "init")
         )
