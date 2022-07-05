@@ -63,7 +63,7 @@ class RouteBase(AbstractRoute, metaclass=RouteMeta):
     def __init__(self, socket: AbstractWebSocket):
         super().__init__(socket)
         self.__socket = socket
-        self.__loop = getattr(self.socket, "_loop", None)
+        self.__loop = getattr(self.socket, "_loop") or asyncio.get_event_loop()
 
         if self.__loop is None:
             self.__loop = asyncio.get_event_loop()

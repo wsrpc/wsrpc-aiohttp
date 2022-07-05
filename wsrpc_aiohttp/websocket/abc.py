@@ -1,8 +1,5 @@
 import asyncio
-from abc import (
-    ABC, abstractmethod, abstractclassmethod, abstractproperty,
-    abstractstaticmethod
-)
+from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import Any, Mapping, Coroutine, Union, Callable, Dict, Tuple
 
@@ -16,7 +13,8 @@ class AbstractWebSocket(ABC):
     def __init__(self, request: Request):
         raise NotImplementedError(request)
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def configure(cls, keepalive_timeout: int,
                   client_timeout: int,
                   max_concurrent_requests: int) -> None:
@@ -55,7 +53,8 @@ class AbstractWebSocket(ABC):
     async def __handle_request(self) -> WebSocketResponse:
         raise NotImplementedError
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def broadcast(
         cls, func, callback=None, return_exceptions=True,
         **kwargs: Mapping[str, Any]
@@ -115,7 +114,7 @@ class Proxy:
 EventListenerType = Callable[[Dict[str, Any]], Any]
 
 
-class AbstactWSRPC(ABC):
+class WSRPCBase(ABC):
     @abstractmethod
     def __init__(self, loop: asyncio.AbstractEventLoop = None,
                  timeout: Union[int, float] = None):
@@ -138,20 +137,22 @@ class AbstactWSRPC(ABC):
     async def _on_message(self, msg: WSMessage):
         raise NotImplementedError
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def get_routes(cls) -> Mapping[str, "RouteType"]:
         raise NotImplementedError
 
     @classmethod
-    def get_clients(cls) -> Dict[str, "AbstactWSRPC"]:
+    def get_clients(cls) -> Dict[str, "AbstractWSRPC"]:
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def routes(self) -> Dict[str, "RouteType"]:
         raise NotImplementedError
 
     @property
-    def clients(self) -> Dict[str, "AbstactWSRPC"]:
+    def clients(self) -> Dict[str, "AbstractWSRPC"]:
         """ Property which contains the socket clients """
         raise NotImplementedError
 
@@ -159,7 +160,8 @@ class AbstactWSRPC(ABC):
     def prepare_args(self, args) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         raise NotImplementedError
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def is_route(func) -> bool:
         raise NotImplementedError
 
@@ -217,30 +219,6 @@ class AbstactWSRPC(ABC):
     async def emit(self, event: Any) -> None:
         pass
 
-    @abstractclassmethod
-    def add_route(cls, route: str,
-                  handler: Union[AbstractRoute, Callable]) -> None:
-        """ Expose local function through RPC
-
-        :param route: Name which function will be aliased for this function.
-                      Remote side should call function by this name.
-        :param handler: Function or Route class (classes based on
-                        :class:`wsrpc_aiohttp.WebSocketRoute`).
-                        For route classes the public methods will
-                        be registered automatically.
-
-        .. note::
-
-            Route classes might be initialized only once for the each
-            socket instance.
-
-            In case the method of class will be called first,
-            :func:`wsrpc_aiohttp.WebSocketRoute.init` will be called
-            without params before callable method.
-
-        """
-        raise NotImplementedError
-
     @abstractmethod
     def add_event_listener(self, func: EventListenerType) -> None:
         raise NotImplementedError
@@ -255,7 +233,8 @@ class AbstactWSRPC(ABC):
 
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def proxy(self) -> Proxy:
         """ Special property which allow run the remote functions
         by `dot` notation
@@ -272,8 +251,39 @@ class AbstactWSRPC(ABC):
 
 
 RouteType = Union[
-    Callable[[AbstactWSRPC, Any], Any],
-    Callable[[AbstactWSRPC, Any], Coroutine[Any, None, Any]],
+    Callable[[WSRPCBase, Any], Any],
+    Callable[[WSRPCBase, Any], Coroutine[Any, None, Any]],
     AbstractRoute
 ]
+
+
+class AbstractWSRPC(WSRPCBase, ABC):
+    @classmethod
+    @abstractmethod
+    def add_route(cls, route: str, handler: RouteType) -> None:
+        """ Expose local function through RPC
+
+        :param route: Name which function will be aliased for this function.
+                      Remote side should call function by this name.
+        :param handler: Function or Route class (classes based on
+                        :class:`wsrpc_aiohttp.WebSocketRoute`).
+                        For route classes the public methods will
+                        be registered automatically.
+
+        .. note::
+
+            Route classes might be initialized only once for each
+            socket instance.
+
+            In case the method of class will be called first,
+            :func:`wsrpc_aiohttp.WebSocketRoute.init` will be called
+            without params before callable method.
+
+        """
+        raise NotImplementedError
+
+
+# backward compatibility for typo
+# noinspection SpellCheckingInspection
+AbstactWSRPC = AbstractWSRPC
 FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
