@@ -29,7 +29,7 @@ jobs:
         with:
           args: tox
 
-  build:
+  tests:
     needs: lint
     runs-on: ubuntu-latest
 
@@ -38,11 +38,10 @@ jobs:
 
       matrix:
         toxenv:
-          - py35
-          - py36
           - py37
           - py38
           - py39
+          - py310
 
     steps:
       - uses: actions/checkout@v2
@@ -50,7 +49,9 @@ jobs:
       - name: tox ${{ matrix.toxenv }}
         uses: docker://snakepacker/python:all
         env:
-          TOXENV: ${{ matrix.toxenv }}
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          FORCE_COLOR: yes
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOXENV: ${{ matrix.toxenv }}
         with:
           args: tox

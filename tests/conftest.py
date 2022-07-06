@@ -22,10 +22,12 @@ def application(handler, socket_path):
 
 
 @pytest.fixture
-async def session(aiohttp_client, application, loop) -> ClientSession:
+async def session(aiohttp_client, application, event_loop) -> ClientSession:
     return await aiohttp_client(application)
 
 
 @pytest.fixture
-async def client(session: ClientSession, socket_path, loop) -> WSRPCClient:
-    return WSRPCClient(socket_path, session=session, loop=loop)
+async def client(
+    session: ClientSession, socket_path, event_loop
+) -> WSRPCClient:
+    return WSRPCClient(socket_path, session=session, loop=event_loop)

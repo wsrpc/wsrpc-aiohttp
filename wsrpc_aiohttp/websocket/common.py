@@ -10,7 +10,7 @@ import aiohttp
 
 from . import decorators
 from .abc import (
-    Proxy, AbstactWSRPC, FrameMappingItemType, RouteType, EventListenerType
+    Proxy, AbstractWSRPC, FrameMappingItemType, RouteType, EventListenerType
 )
 from .route import Route
 from .tools import Singleton, awaitable, loads
@@ -59,10 +59,10 @@ CallItem = t.NamedTuple(
 
 
 RouteCollectionType = t.DefaultDict[
-    t.Type[AbstactWSRPC], t.Dict[str, RouteType]
+    t.Type[AbstractWSRPC], t.Dict[str, RouteType]
 ]
 ClientCollectionType = t.DefaultDict[
-    t.Type[AbstactWSRPC], t.Dict[str, AbstactWSRPC]
+    t.Type[AbstractWSRPC], t.Dict[str, AbstractWSRPC]
 ]
 LocksCollectionType = t.DefaultDict[int, asyncio.Lock]
 FutureCollectionType = t.DefaultDict[int, asyncio.Future]
@@ -73,7 +73,7 @@ def _route_maker() -> t.Dict[str, RouteType]:
     return {"ping": ping}   # type: ignore
 
 
-class WSRPCBase(AbstactWSRPC):
+class WSRPCBase(AbstractWSRPC):
     """ Common WSRPC abstraction """
 
     _ROUTES = defaultdict(_route_maker)       # type: RouteCollectionType
@@ -249,7 +249,7 @@ class WSRPCBase(AbstactWSRPC):
         return cls._ROUTES[cls]
 
     @classmethod
-    def get_clients(cls) -> t.Dict[str, AbstactWSRPC]:
+    def get_clients(cls) -> t.Dict[str, AbstractWSRPC]:
         return cls._CLIENTS[cls]
 
     @property
@@ -258,7 +258,7 @@ class WSRPCBase(AbstactWSRPC):
         return self.get_routes()
 
     @property
-    def clients(self) -> t.Dict[str, AbstactWSRPC]:
+    def clients(self) -> t.Dict[str, AbstractWSRPC]:
         """ Property which contains the socket clients """
         return self.get_clients()
 
@@ -451,7 +451,7 @@ class WSRPCBase(AbstactWSRPC):
         await self._send(**event)
 
     @classmethod
-    def add_route(cls, route: str, handler: RouteType):
+    def add_route(cls, route: str, handler: RouteType) -> None:
         """ Expose local function through RPC
 
         :param route: Name which function will be aliased for this function.

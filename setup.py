@@ -10,6 +10,16 @@ module = SourceFileLoader(
 ).load_module()
 
 
+TEST_REQUIRES = [
+    "async-timeout~=4.0.2",
+    "pytest~=7.1.2",
+    "pytest-aiohttp~=1.0.4",
+    "pytest-cov~=3.0.0",
+    "coverage!=4.3",
+    "coveralls~=3.3.1",
+]
+
+
 setup(
     name="wsrpc-aiohttp",
     version=module.__version__,
@@ -31,11 +41,10 @@ setup(
         "Operating System :: Microsoft",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     long_description=open("README.md").read(),
@@ -46,24 +55,11 @@ setup(
     python_requires=">3.5.*, <4",
     extras_require={
         "ujson": ["ujson"],
-        "testing": [
-            "async-timeout",
-            "pytest",
-            "pytest-aiohttp",
-            "pytest-cov",
-            "coverage!=4.3",
-            "coveralls",
-        ],
+        "testing": TEST_REQUIRES,
         "develop": [
-            "async-timeout",
-            "coverage!=4.3",
-            "coveralls",
-            "pytest",
-            "pytest-aiohttp",
-            "pytest-cov",
             "Sphinx",
             "sphinxcontrib-plantuml",
             "tox>=2.4",
-        ],
+        ] + TEST_REQUIRES,
     },
 )
