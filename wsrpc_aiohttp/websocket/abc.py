@@ -274,6 +274,6 @@ class AbstactWSRPC(ABC):
 RouteType = Union[
     Callable[[AbstactWSRPC, Any], Any],
     Callable[[AbstactWSRPC, Any], Coroutine[Any, None, Any]],
-    AbstractRoute
+    Type[AbstractRoute]
 ]
 FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
