@@ -1,5 +1,4 @@
 import pytest
-
 from aiohttp import WSServerHandshakeError
 
 from wsrpc_aiohttp import ClientException, WebSocketAsync

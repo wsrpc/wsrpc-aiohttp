@@ -1,13 +1,6 @@
 import asyncio
 import base64
 from functools import singledispatch, wraps
-from json import dumps as _dumps
-
-
-try:
-    from ujson import loads     # type: ignore
-except ImportError:
-    from json import loads      # type: ignore
 
 
 class Lazy:
@@ -48,10 +41,6 @@ def _(value):
     return base64.b64encode(value).decode()
 
 
-def dumps(obj):
-    return _dumps(obj, default=serializer)
-
-
 class SingletonMeta(type):
     def __new__(cls, clsname, superclasses, attributedict):
         klass = type.__new__(cls, clsname, superclasses, attributedict)
@@ -90,6 +79,4 @@ __all__ = (
     "Lazy",
     "Singleton",
     "awaitable",
-    "dumps",
-    "loads",
 )

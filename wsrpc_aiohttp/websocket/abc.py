@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import Any, Mapping, Coroutine, Union, Callable, Dict, Tuple
+from typing import Any, Callable, Coroutine, Dict, Mapping, Tuple, Union
 
 from aiohttp import WSMessage
 from aiohttp.web import Request
@@ -15,9 +15,11 @@ class AbstractWebSocket(ABC):
 
     @classmethod
     @abstractmethod
-    def configure(cls, keepalive_timeout: int,
-                  client_timeout: int,
-                  max_concurrent_requests: int) -> None:
+    def configure(
+        cls, keepalive_timeout: int,
+        client_timeout: int,
+        max_concurrent_requests: int,
+    ) -> None:
         """ Configures the handler class
 
         :param keepalive_timeout: sets timeout of client pong response
@@ -26,7 +28,7 @@ class AbstractWebSocket(ABC):
                                         be performed by each client
         """
         raise NotImplementedError((
-            keepalive_timeout, client_timeout, max_concurrent_requests
+            keepalive_timeout, client_timeout, max_concurrent_requests,
         ))
 
     @abstractmethod
@@ -116,8 +118,10 @@ EventListenerType = Callable[[Dict[str, Any]], Any]
 
 class WSRPCBase(ABC):
     @abstractmethod
-    def __init__(self, loop: asyncio.AbstractEventLoop = None,
-                 timeout: Union[int, float] = None):
+    def __init__(
+        self, loop: asyncio.AbstractEventLoop = None,
+        timeout: Union[int, float] = None,
+    ):
         raise NotImplementedError((loop, timeout))
 
     @abstractmethod
@@ -166,9 +170,11 @@ class WSRPCBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def handle_method(self, method: str, serial: int,
-                            args: Tuple[Tuple[Any, ...]],
-                            kwargs: Mapping[str, Any]) -> None:
+    async def handle_method(
+        self, method: str, serial: int,
+        args: Tuple[Tuple[Any, ...]],
+        kwargs: Mapping[str, Any],
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -188,8 +194,10 @@ class WSRPCBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def call(self, func: str, timeout: Union[int, float] = None,
-                   **kwargs: Mapping[str, Any]):
+    async def call(
+        self, func: str, timeout: Union[int, float] = None,
+        **kwargs: Mapping[str, Any]
+    ):
         """ Method for call remote function
 
         Remote methods allows only kwargs as arguments.
@@ -253,7 +261,7 @@ class WSRPCBase(ABC):
 RouteType = Union[
     Callable[[WSRPCBase, Any], Any],
     Callable[[WSRPCBase, Any], Coroutine[Any, None, Any]],
-    AbstractRoute
+    AbstractRoute,
 ]
 
 

@@ -1,5 +1,5 @@
-import logging
 import inspect
+import logging
 
 
 log = logging.getLogger(__name__)
@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 
 class Signal:
 
-    __slots__ = ('_receivers', '_is_frozen')
+    __slots__ = ("_receivers", "_is_frozen")
 
     def __init__(self):
         self._receivers = set()
@@ -20,7 +20,7 @@ class Signal:
             )
 
         if not inspect.iscoroutinefunction(receiver):
-            raise RuntimeError('%r is not a coroutine function', receiver)
+            raise RuntimeError("%r is not a coroutine function", receiver)
 
         self._receivers.add(receiver)
 

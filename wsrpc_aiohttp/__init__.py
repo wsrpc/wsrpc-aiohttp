@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 
 from .websocket import decorators
 from .websocket.client import WSRPCClient
@@ -8,7 +8,7 @@ from .websocket.route import AllowedRoute, PrefixRoute, Route, WebSocketRoute
 from .websocket.tools import serializer
 
 
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+STATIC_DIR = str(Path(__file__).parent.resolve() / "static")
 
 
 __all__ = (

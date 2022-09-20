@@ -1,5 +1,6 @@
 import pytest
 from aiohttp import ClientConnectionError
+
 from wsrpc_aiohttp import WSRPCClient
 
 

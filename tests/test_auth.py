@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 import pytest
 from aiohttp import WSServerHandshakeError
+
 from wsrpc_aiohttp import WebSocketAsync, WSRPCClient
 
 

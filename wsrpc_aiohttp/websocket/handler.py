@@ -1,17 +1,20 @@
 # encoding: utf-8
 import asyncio
+import json
 import logging
 import uuid
 from collections import defaultdict
 from functools import partial
+from typing import Optional
 
 import aiohttp
 from aiohttp import WebSocketError, web
 from aiohttp.abc import AbstractView
 
-from .common import ClientException, WSRPCBase
 from wsrpc_aiohttp.signal import Signal
-from .tools import Lazy, awaitable, dumps
+
+from .common import ClientException, TimeoutType, WSRPCBase
+from .tools import Lazy, awaitable
 
 
 global_log = logging.getLogger("wsrpc")
@@ -33,10 +36,13 @@ class WebSocketBase(WSRPCBase, AbstractView):
         "protocol_version",
     )
 
-    KEEPALIVE_PING_TIMEOUT = 30  # type: int
-    CLIENT_TIMEOUT = int(KEEPALIVE_PING_TIMEOUT / 3)  # type: int
-    MAX_CONCURRENT_REQUESTS = 25  # type: int
-    REQUEST_EXECUTION_TIMEOUT = None  # type: int
+    KEEPALIVE_PING_TIMEOUT: TimeoutType = 30
+    CLIENT_TIMEOUT: TimeoutType = int(KEEPALIVE_PING_TIMEOUT / 3)
+    MAX_CONCURRENT_REQUESTS: TimeoutType = 25
+    REQUEST_EXECUTION_TIMEOUT: Optional[TimeoutType] = None
+
+    JSON_LOADS = staticmethod(json.loads)
+    JSON_DUMPS = staticmethod(json.dumps)
 
     ON_AUTH_SUCCESS = Signal()
     ON_AUTH_FAIL = Signal()
@@ -46,7 +52,10 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
     def __init__(self, request):
         AbstractView.__init__(self, request)
-        WSRPCBase.__init__(self, timeout=self.REQUEST_EXECUTION_TIMEOUT)
+        WSRPCBase.__init__(
+            self, timeout=self.REQUEST_EXECUTION_TIMEOUT,
+            loads=self.JSON_LOADS, dumps=self.JSON_DUMPS,
+        )
 
         self._ping = defaultdict(self._loop.create_future)
         self.id = uuid.uuid4()
@@ -60,9 +69,13 @@ class WebSocketBase(WSRPCBase, AbstractView):
         keepalive_timeout=KEEPALIVE_PING_TIMEOUT,
         client_timeout=CLIENT_TIMEOUT,
         max_concurrent_requests=MAX_CONCURRENT_REQUESTS,
+        loads=json.loads,
+        dumps=json.dumps,
     ):
         """ Configures the handler class
 
+        :param dumps: json serializer
+        :param loads: json deserializer
         :param keepalive_timeout: sets timeout of client pong response
         :param client_timeout: internal lock timeout
         :param max_concurrent_requests: how many concurrent requests might
@@ -72,6 +85,8 @@ class WebSocketBase(WSRPCBase, AbstractView):
         cls.KEEPALIVE_PING_TIMEOUT = keepalive_timeout
         cls.CLIENT_TIMEOUT = client_timeout
         cls.MAX_CONCURRENT_REQUESTS = max_concurrent_requests
+        cls.JSON_LOADS = staticmethod(loads)
+        cls.JSON_DUMPS = staticmethod(dumps)
 
     @classmethod
     def freeze(cls):
@@ -190,7 +205,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 Lazy(lambda: str(kwargs.get("id"))),
                 Lazy(lambda: str(kwargs)),
             )
-            await self.socket.send_json(kwargs, dumps=lambda x: dumps(x))
+            await self.socket.send_json(kwargs, dumps=self._json_dumps)
         except aiohttp.WebSocketError:
             self._create_task(self.close())
 
@@ -218,7 +233,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         log.debug(
             "CLIENTS: %s",
             Lazy(
-                lambda: "".join(["\n\t%r" % i for i in self.clients.values()])
+                lambda: "".join(["\n\t%r" % i for i in self.clients.values()]),
             ),
         )
 
@@ -228,7 +243,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 return
 
             future = asyncio.ensure_future(
-                self.call("ping", seq=self._loop.time())
+                self.call("ping", seq=self._loop.time()),
             )
 
             def on_timeout():
@@ -242,7 +257,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 future.set_exception(TimeoutError)
 
             handle = self._loop.call_later(
-                self.KEEPALIVE_PING_TIMEOUT, on_timeout
+                self.KEEPALIVE_PING_TIMEOUT, on_timeout,
             )
 
             future.add_done_callback(lambda f: handle.cancel())
