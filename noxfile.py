@@ -30,6 +30,20 @@ def lint(session: nox.Session):
 def docs(session: nox.Session):
     docs = Path("docs")
     session.install("-r", str(docs / "requirements.txt"))
+    plantuml = (Path("contrib") / "plantuml.jar").resolve()
+
+    def plantuml_render(*filenames):
+        with session.chdir(str(docs / "source")):
+            session.run(
+                "java", "-jar", str(plantuml), "-tsvg",
+                "-quiet", "-progress", "-overwrite", "-nometadata",
+                "-o", "_static", *filenames, external=True,
+            )
+
+    plantuml_render(
+        "explanation.puml", "loopback-call.puml", "server-client.puml"
+    )
+
     with session.chdir(str(docs)):
         session.run("sphinx-build", "source", "build")
 

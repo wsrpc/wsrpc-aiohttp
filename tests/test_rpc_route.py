@@ -224,7 +224,7 @@ async def test_call_method(client: WSRPCClient, handler: WebSocketAsync):
 
 async def test_call_timeout(client: WSRPCClient, handler: WebSocketAsync):
     async def will_sleep_for(_, seconds):
-        with timeout(0.5):
+        async with timeout(0.5):
             await asyncio.sleep(seconds)
             return DATA_TO_RETURN
 

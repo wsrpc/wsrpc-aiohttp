@@ -11,7 +11,7 @@ Client perform connection to the server.
 When connection is successfully initialized client or server might calls
 remote methods.
 
-.. uml:: server-client.puml
+.. image:: _static/server-client.svg
 
 
 Socket instance
@@ -175,4 +175,4 @@ The client-side code:
 
 The sequence diagram for this case:
 
-.. uml:: loopback-call.puml
+.. image:: _static/loopback-call.svg

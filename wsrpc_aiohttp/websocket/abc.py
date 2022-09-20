@@ -1,4 +1,5 @@
 import asyncio
+import typing as t
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import Any, Callable, Coroutine, Dict, Mapping, Tuple, Union
@@ -7,7 +8,13 @@ from aiohttp import WSMessage
 from aiohttp.web import Request
 from aiohttp.web_ws import WebSocketResponse
 
-from wsrpc_aiohttp.websocket.common import TimeoutType
+
+FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
+LocksCollectionType = t.DefaultDict[int, asyncio.Lock]
+FutureCollectionType = t.DefaultDict[int, asyncio.Future]
+TimeoutType = t.Union[int, float]
+LoadsType = t.Callable[..., t.Any]
+DumpsType = t.Callable[..., str]
 
 
 class AbstractWebSocket(ABC):
@@ -293,7 +300,10 @@ class AbstractWSRPC(WSRPCBase, ABC):
         raise NotImplementedError
 
 
-# backward compatibility for typo
-# noinspection SpellCheckingInspection
-AbstactWSRPC = AbstractWSRPC
-FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
+RouteCollectionType = t.DefaultDict[
+    t.Type[AbstractWSRPC], t.Dict[str, RouteType],
+]
+ClientCollectionType = t.DefaultDict[
+    t.Type[AbstractWSRPC], t.Dict[str, AbstractWSRPC],
+]
+EventListenerCollectionType = t.Set[EventListenerType]

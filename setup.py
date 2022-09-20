@@ -1,4 +1,3 @@
-# encoding: utf-8
 import os
 from importlib.machinery import SourceFileLoader
 
@@ -64,7 +63,6 @@ setup(
             "pytest-cov",
             "requests",
             "sphinx",
-            "sphinxcontrib-plantuml",
             "tox>=2.4",
         ],
     },

@@ -36,4 +36,4 @@ How it works
 
 The following sequence diagram probably to explain some high level of the data-flow.
 
-.. uml:: explanation.puml
+.. image:: _static/explanation.svg

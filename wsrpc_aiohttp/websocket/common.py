@@ -13,7 +13,9 @@ from wsrpc_aiohttp.signal import Signal
 
 from . import decorators
 from .abc import (
-    AbstractWSRPC, EventListenerType, FrameMappingItemType, Proxy, RouteType,
+    AbstractWSRPC, ClientCollectionType, DumpsType, EventListenerCollectionType,
+    FrameMappingItemType, FutureCollectionType, LoadsType, LocksCollectionType,
+    Proxy, RouteCollectionType, RouteType, TimeoutType,
 )
 from .route import Route
 from .tools import Singleton, awaitable, serializer
@@ -58,20 +60,6 @@ CallItem = t.NamedTuple(
         ("params", t.Optional[t.Union[t.List, t.Dict]]),
     ),
 )
-
-
-RouteCollectionType = t.DefaultDict[
-    t.Type[AbstractWSRPC], t.Dict[str, RouteType],
-]
-ClientCollectionType = t.DefaultDict[
-    t.Type[AbstractWSRPC], t.Dict[str, AbstractWSRPC],
-]
-LocksCollectionType = t.DefaultDict[int, asyncio.Lock]
-FutureCollectionType = t.DefaultDict[int, asyncio.Future]
-EventListenerCollectionType = t.Set[EventListenerType]
-TimeoutType = t.Union[int, float]
-LoadsType = t.Callable[..., t.Any]
-DumpsType = t.Callable[..., str]
 
 
 def _route_maker() -> t.Dict[str, RouteType]:

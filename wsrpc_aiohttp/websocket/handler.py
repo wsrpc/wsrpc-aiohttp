@@ -13,7 +13,8 @@ from aiohttp.abc import AbstractView
 
 from wsrpc_aiohttp.signal import Signal
 
-from .common import ClientException, TimeoutType, WSRPCBase
+from .abc import TimeoutType
+from .common import ClientException, WSRPCBase
 from .tools import Lazy, awaitable
 
 
