@@ -268,8 +268,8 @@ class WSRPCBase(ABC):
 
 
 RouteType = Union[
-    Callable[[WSRPCBase, Any], Any],
-    Callable[[WSRPCBase, Any], Coroutine[Any, None, Any]],
+    Callable[[WSRPCBase, ...], Any],
+    Callable[[WSRPCBase, ...], Coroutine[Any, Any, Any]],
     AbstractRoute,
 ]
 
