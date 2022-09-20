@@ -40,9 +40,7 @@ def docs(session: nox.Session):
                 "-o", "_static", *filenames, external=True,
             )
 
-    plantuml_render(
-        "explanation.puml", "loopback-call.puml", "server-client.puml"
-    )
+    plantuml_render("*.puml")
 
     with session.chdir(str(docs)):
         session.run("sphinx-build", "source", "build")
