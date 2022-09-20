@@ -115,6 +115,8 @@ html_theme = "furo"
 #
 # html_theme_options = {}
 html_theme_options = {
+    "light_logo": "logo_light.svg",
+    "dark_logo": "logo_dark.svg",
     "sidebar_hide_name": True,
     "source_repository": "https://github.com/wsrpc/wsrpc-aiohttp/",
     "source_branch": "master",
@@ -235,5 +237,4 @@ epub_copyright = copyright
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ["search.html"]
 
-html_logo = "_static/logo.png"
 html_favicon = "icon.png"
