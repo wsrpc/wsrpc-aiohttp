@@ -48,6 +48,7 @@ setup(
             "async-timeout",
             "coverage!=4.3",
             "coveralls",
+            "orjson",
             "pytest",
             "pytest-aiohttp",
             "pytest-cov",
