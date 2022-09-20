@@ -70,6 +70,8 @@ LocksCollectionType = t.DefaultDict[int, asyncio.Lock]
 FutureCollectionType = t.DefaultDict[int, asyncio.Future]
 EventListenerCollectionType = t.Set[EventListenerType]
 TimeoutType = t.Union[int, float]
+LoadsType = t.Callable[..., t.Any]
+DumpsType = t.Callable[..., str]
 
 
 def _route_maker() -> t.Dict[str, RouteType]:
@@ -107,8 +109,9 @@ class WSRPCBase(AbstractWSRPC):
 
     def __init__(
         self, loop: asyncio.AbstractEventLoop = None,
-        timeout: t.Union[int, float] = None,
-        loads=json.loads, dumps=json.dumps,
+        timeout: t.Optional[TimeoutType] = None,
+        loads: LoadsType = json.loads,
+        dumps: DumpsType = json.dumps,
     ):
         self._json_dumps = dumps
         self._json_loads = loads
@@ -116,7 +119,7 @@ class WSRPCBase(AbstractWSRPC):
         self._handlers = {}
         self._pending_tasks = set()
         self._serial = 0
-        self._timeout = timeout
+        self._timeout: t.Optional[TimeoutType] = timeout
         self._locks: LocksCollectionType = defaultdict(asyncio.Lock)
         self._futures: FutureCollectionType = defaultdict(
             self._loop.create_future,

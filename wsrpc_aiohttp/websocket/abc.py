@@ -7,6 +7,8 @@ from aiohttp import WSMessage
 from aiohttp.web import Request
 from aiohttp.web_ws import WebSocketResponse
 
+from wsrpc_aiohttp.websocket.common import TimeoutType
+
 
 class AbstractWebSocket(ABC):
     @abstractmethod
@@ -16,8 +18,8 @@ class AbstractWebSocket(ABC):
     @classmethod
     @abstractmethod
     def configure(
-        cls, keepalive_timeout: int,
-        client_timeout: int,
+        cls, keepalive_timeout: TimeoutType,
+        client_timeout: TimeoutType,
         max_concurrent_requests: int,
     ) -> None:
         """ Configures the handler class

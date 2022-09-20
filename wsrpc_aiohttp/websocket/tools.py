@@ -79,4 +79,5 @@ __all__ = (
     "Lazy",
     "Singleton",
     "awaitable",
+    "serializer",
 )
