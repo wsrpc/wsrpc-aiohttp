@@ -43,7 +43,7 @@ setup(
     install_requires=[
         "aiohttp<4",
         "yarl",
-        "typing-extensions; python<3.10",
+        'typing_extensions; python_version < "3.10.0"'
     ],
     python_requires=">3.5.*, <4",
     extras_require={
