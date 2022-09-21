@@ -94,8 +94,9 @@ class AbstractWebSocket(ABC):
 
 
 class AbstractRoute:
+    # noinspection PyUnusedLocal
     def __init__(self, socket: AbstractWebSocket):
-        raise NotImplementedError(socket)
+        pass
 
     @property
     def socket(self) -> AbstractWebSocket:

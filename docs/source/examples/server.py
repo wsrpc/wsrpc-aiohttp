@@ -1,12 +1,14 @@
 import asyncio
 import logging
-import os
 import time
 from binascii import hexlify
+from pathlib import Path
 from random import choice
 
 import aiohttp.web
-from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync, WebSocketRoute
+from wsrpc_aiohttp import (
+    STATIC_DIR, WebSocketAsync, WebSocketRoute, decorators
+)
 
 
 loop = asyncio.get_event_loop()
@@ -85,5 +87,5 @@ if __name__ == "__main__":
         return aiohttp.web.HTTPFound("/index.html")
 
     app.router.add_route("GET", "/", redirect)
-    app.router.add_static("/", os.path.dirname(os.path.abspath(__file__)))
+    app.router.add_static("/", Path(__file__).parent)
     aiohttp.web.run_app(app, port=arguments.port, host=arguments.listen)
