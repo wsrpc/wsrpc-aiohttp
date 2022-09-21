@@ -1,20 +1,28 @@
 import asyncio
-import typing as t
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import Any, Callable, Coroutine, Dict, Mapping, Tuple, Union
+from typing import (
+    Any, Callable, Coroutine, DefaultDict, Dict, Mapping, Set, Tuple, Type,
+    TypeVar, Union,
+)
 
 from aiohttp import WSMessage
 from aiohttp.web import Request
 from aiohttp.web_ws import WebSocketResponse
 
 
+try:
+    from typing import Concatenate, ParamSpec
+except ImportError:
+    from typing_extensions import Concatenate, ParamSpec
+
+
 FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
-LocksCollectionType = t.DefaultDict[int, asyncio.Lock]
-FutureCollectionType = t.DefaultDict[int, asyncio.Future]
-TimeoutType = t.Union[int, float]
-LoadsType = t.Callable[..., t.Any]
-DumpsType = t.Callable[..., str]
+LocksCollectionType = DefaultDict[int, asyncio.Lock]
+FutureCollectionType = DefaultDict[int, asyncio.Future]
+TimeoutType = Union[int, float]
+LoadsType = Callable[..., Any]
+DumpsType = Callable[..., str]
 
 
 class AbstractWebSocket(ABC):
@@ -87,7 +95,7 @@ class AbstractWebSocket(ABC):
 
 class AbstractRoute:
     def __init__(self, socket: AbstractWebSocket):
-        pass
+        raise NotImplementedError(socket)
 
     @property
     def socket(self) -> AbstractWebSocket:
@@ -122,7 +130,8 @@ class Proxy:
         return ProxyMethod(self.__call, item)
 
 
-EventListenerType = Callable[[Dict[str, Any]], Any]
+EventType = Mapping[str, Any]
+EventListenerType = Callable[[EventType], Any]
 
 
 class WSRPCBase(ABC):
@@ -267,17 +276,21 @@ class WSRPCBase(ABC):
         raise NotImplementedError
 
 
-RouteType = Union[
-    Callable[[WSRPCBase, ...], Any],
-    Callable[[WSRPCBase, ...], Coroutine[Any, Any, Any]],
-    AbstractRoute,
-]
+WSRPC = TypeVar("WSRPC", bound=WSRPCBase)
+RouteType = Union[Callable[..., Any], Type[AbstractRoute]]
+P = ParamSpec("P")
 
 
 class AbstractWSRPC(WSRPCBase, ABC):
     @classmethod
     @abstractmethod
-    def add_route(cls, route: str, handler: RouteType) -> None:
+    def add_route(
+        cls, route: str,
+        handler: Union[
+            Callable[Concatenate[WSRPC, P], Any],
+            Type[AbstractRoute],
+        ],
+    ) -> None:
         """ Expose local function through RPC
 
         :param route: Name which function will be aliased for this function.
@@ -300,10 +313,10 @@ class AbstractWSRPC(WSRPCBase, ABC):
         raise NotImplementedError
 
 
-RouteCollectionType = t.DefaultDict[
-    t.Type[AbstractWSRPC], t.Dict[str, RouteType],
+RouteCollectionType = DefaultDict[
+    Type[AbstractWSRPC], Dict[str, RouteType],
 ]
-ClientCollectionType = t.DefaultDict[
-    t.Type[AbstractWSRPC], t.Dict[str, AbstractWSRPC],
+ClientCollectionType = DefaultDict[
+    Type[AbstractWSRPC], Dict[str, AbstractWSRPC],
 ]
-EventListenerCollectionType = t.Set[EventListenerType]
+EventListenerCollectionType = Set[EventListenerType]

@@ -14,8 +14,8 @@ from wsrpc_aiohttp.signal import Signal
 from . import decorators
 from .abc import (
     AbstractWSRPC, ClientCollectionType, DumpsType, EventListenerCollectionType,
-    FrameMappingItemType, FutureCollectionType, LoadsType, LocksCollectionType,
-    Proxy, RouteCollectionType, RouteType, TimeoutType,
+    EventListenerType, FrameMappingItemType, FutureCollectionType, LoadsType,
+    LocksCollectionType, Proxy, RouteCollectionType, RouteType, TimeoutType,
 )
 from .route import Route
 from .tools import Singleton, awaitable, serializer
@@ -482,7 +482,7 @@ class WSRPCBase(AbstractWSRPC):
 
         cls.get_routes()[route] = handler
 
-    def add_event_listener(self, func: t.Callable[[dict], t.Any]):
+    def add_event_listener(self, func: EventListenerType):
         self._event_listeners.add(func)
 
     def remove_event_listeners(self, func):

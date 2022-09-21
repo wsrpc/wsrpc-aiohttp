@@ -40,7 +40,11 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=["tests", "doc"]),
     package_data={"wsrpc_aiohttp": ["static/*", "py.typed"]},
-    install_requires=["aiohttp<4", "yarl"],
+    install_requires=[
+        "aiohttp<4",
+        "yarl",
+        "typing-extensions; python<3.10",
+    ],
     python_requires=">3.5.*, <4",
     extras_require={
         "testing": [
