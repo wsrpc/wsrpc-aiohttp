@@ -6,9 +6,7 @@ from pathlib import Path
 from random import choice
 
 import aiohttp.web
-from wsrpc_aiohttp import (
-    STATIC_DIR, WebSocketAsync, WebSocketRoute, decorators
-)
+from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync, WebSocketRoute
 
 
 loop = asyncio.get_event_loop()
