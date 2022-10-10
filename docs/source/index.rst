@@ -30,16 +30,6 @@ Welcome to wsrpc-aiohttp's documentation!
 
 `wsrpc-aiohttp`_ it's library for writing live web applications with websockets.
 
-Table Of Contents
-+++++++++++++++++
-
-.. toctree::
-   :glob:
-   :maxdepth: 3
-
-   *-*
-   apidoc
-
 Features
 ++++++++
 
@@ -114,3 +104,14 @@ Thanks for contributing
 * `@mosquito`_ (author)
 
 .. _@mosquito: https://github.com/mosquito
+
+
+Table Of Contents
++++++++++++++++++
+
+.. toctree::
+   :glob:
+   :maxdepth: 3
+
+   *-*
+   apidoc
