@@ -10,9 +10,9 @@ Welcome to wsrpc-aiohttp's documentation!
     :target: https://coveralls.io/github/wsrpc/wsrpc-aiohttp
     :alt: Coveralls
 
-.. image:: https://travis-ci.org/wsrpc/wsrpc-aiohttp.svg
-    :target: https://travis-ci.org/wsrpc/wsrpc-aiohttp
-    :alt: Travis CI
+.. image:: https://github.com/wsrpc/wsrpc-aiohttp/workflows/tests/badge.svg
+    :target: https://github.com/wsrpc/wsrpc-aiohttp/actions?query=branch%3Amaster
+    :alt: Github Actions
 
 .. image:: https://img.shields.io/pypi/v/wsrpc-aiohttp.svg
     :target: https://pypi.python.org/pypi/wsrpc-aiohttp/
