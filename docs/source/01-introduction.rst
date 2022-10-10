@@ -8,7 +8,7 @@ Overview
 --------
 
 Client perform connection to the server.
-When connection is successfully initialized client or server might calls
+When connection is successfully initialized client or server might call
 remote methods.
 
 .. image:: _static/server-client.svg
