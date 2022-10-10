@@ -1,8 +1,8 @@
 import asyncio
 import logging
-import os
 import time
 from binascii import hexlify
+from pathlib import Path
 from random import choice
 
 import aiohttp.web
@@ -10,7 +10,6 @@ from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync, WebSocketRoute
 
 
 loop = asyncio.get_event_loop()
-app = aiohttp.web.Application(loop=loop)
 log = logging.getLogger(__name__)
 
 
@@ -21,11 +20,6 @@ class WebSocket(WebSocketAsync):
             hex=hexlify(message.data).decode(),
             message="Got binary data",
         )
-
-
-app.router.add_route("*", "/ws/", WebSocket)
-app.router.add_static("/js", STATIC_DIR)
-app.router.add_static("/", os.path.dirname(os.path.abspath(__file__)))
 
 
 class TestRoute(WebSocketRoute):
@@ -83,4 +77,13 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8000)
 
     arguments = parser.parse_args()
+    app = aiohttp.web.Application()
+    app.router.add_route("*", "/ws/", WebSocket)
+    app.router.add_static("/js", STATIC_DIR)
+
+    async def redirect(_) -> aiohttp.web.Response:
+        return aiohttp.web.HTTPFound("/index.html")
+
+    app.router.add_route("GET", "/", redirect)
+    app.router.add_static("/", Path(__file__).parent)
     aiohttp.web.run_app(app, port=arguments.port, host=arguments.listen)

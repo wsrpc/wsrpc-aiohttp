@@ -1,14 +1,28 @@
 import asyncio
-from abc import (
-    ABC, abstractmethod, abstractclassmethod, abstractproperty,
-    abstractstaticmethod
-)
+from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import Any, Mapping, Coroutine, Union, Callable, Dict, Tuple
+from typing import (
+    Any, Callable, Coroutine, DefaultDict, Dict, Mapping, Set, Tuple, Type,
+    TypeVar, Union,
+)
 
 from aiohttp import WSMessage
 from aiohttp.web import Request
 from aiohttp.web_ws import WebSocketResponse
+
+
+try:
+    from typing import Concatenate, ParamSpec
+except ImportError:
+    from typing_extensions import Concatenate, ParamSpec
+
+
+FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
+LocksCollectionType = DefaultDict[int, asyncio.Lock]
+FutureCollectionType = DefaultDict[int, asyncio.Future]
+TimeoutType = Union[int, float]
+LoadsType = Callable[..., Any]
+DumpsType = Callable[..., str]
 
 
 class AbstractWebSocket(ABC):
@@ -16,10 +30,13 @@ class AbstractWebSocket(ABC):
     def __init__(self, request: Request):
         raise NotImplementedError(request)
 
-    @abstractclassmethod
-    def configure(cls, keepalive_timeout: int,
-                  client_timeout: int,
-                  max_concurrent_requests: int) -> None:
+    @classmethod
+    @abstractmethod
+    def configure(
+        cls, keepalive_timeout: TimeoutType,
+        client_timeout: TimeoutType,
+        max_concurrent_requests: int,
+    ) -> None:
         """ Configures the handler class
 
         :param keepalive_timeout: sets timeout of client pong response
@@ -28,7 +45,7 @@ class AbstractWebSocket(ABC):
                                         be performed by each client
         """
         raise NotImplementedError((
-            keepalive_timeout, client_timeout, max_concurrent_requests
+            keepalive_timeout, client_timeout, max_concurrent_requests,
         ))
 
     @abstractmethod
@@ -55,7 +72,8 @@ class AbstractWebSocket(ABC):
     async def __handle_request(self) -> WebSocketResponse:
         raise NotImplementedError
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def broadcast(
         cls, func, callback=None, return_exceptions=True,
         **kwargs: Mapping[str, Any]
@@ -76,6 +94,7 @@ class AbstractWebSocket(ABC):
 
 
 class AbstractRoute:
+    # noinspection PyUnusedLocal
     def __init__(self, socket: AbstractWebSocket):
         pass
 
@@ -112,13 +131,16 @@ class Proxy:
         return ProxyMethod(self.__call, item)
 
 
-EventListenerType = Callable[[Dict[str, Any]], Any]
+EventType = Mapping[str, Any]
+EventListenerType = Callable[[EventType], Any]
 
 
-class AbstactWSRPC(ABC):
+class WSRPCBase(ABC):
     @abstractmethod
-    def __init__(self, loop: asyncio.AbstractEventLoop = None,
-                 timeout: Union[int, float] = None):
+    def __init__(
+        self, loop: asyncio.AbstractEventLoop = None,
+        timeout: Union[int, float] = None,
+    ):
         raise NotImplementedError((loop, timeout))
 
     @abstractmethod
@@ -138,20 +160,22 @@ class AbstactWSRPC(ABC):
     async def _on_message(self, msg: WSMessage):
         raise NotImplementedError
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def get_routes(cls) -> Mapping[str, "RouteType"]:
         raise NotImplementedError
 
     @classmethod
-    def get_clients(cls) -> Dict[str, "AbstactWSRPC"]:
+    def get_clients(cls) -> Dict[str, "AbstractWSRPC"]:
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def routes(self) -> Dict[str, "RouteType"]:
         raise NotImplementedError
 
     @property
-    def clients(self) -> Dict[str, "AbstactWSRPC"]:
+    def clients(self) -> Dict[str, "AbstractWSRPC"]:
         """ Property which contains the socket clients """
         raise NotImplementedError
 
@@ -159,14 +183,17 @@ class AbstactWSRPC(ABC):
     def prepare_args(self, args) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         raise NotImplementedError
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def is_route(func) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    async def handle_method(self, method: str, serial: int,
-                            args: Tuple[Tuple[Any, ...]],
-                            kwargs: Mapping[str, Any]) -> None:
+    async def handle_method(
+        self, method: str, serial: int,
+        args: Tuple[Tuple[Any, ...]],
+        kwargs: Mapping[str, Any],
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -186,8 +213,10 @@ class AbstactWSRPC(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def call(self, func: str, timeout: Union[int, float] = None,
-                   **kwargs: Mapping[str, Any]):
+    async def call(
+        self, func: str, timeout: Union[int, float] = None,
+        **kwargs: Mapping[str, Any]
+    ):
         """ Method for call remote function
 
         Remote methods allows only kwargs as arguments.
@@ -217,30 +246,6 @@ class AbstactWSRPC(ABC):
     async def emit(self, event: Any) -> None:
         pass
 
-    @abstractclassmethod
-    def add_route(cls, route: str,
-                  handler: Union[AbstractRoute, Callable]) -> None:
-        """ Expose local function through RPC
-
-        :param route: Name which function will be aliased for this function.
-                      Remote side should call function by this name.
-        :param handler: Function or Route class (classes based on
-                        :class:`wsrpc_aiohttp.WebSocketRoute`).
-                        For route classes the public methods will
-                        be registered automatically.
-
-        .. note::
-
-            Route classes might be initialized only once for the each
-            socket instance.
-
-            In case the method of class will be called first,
-            :func:`wsrpc_aiohttp.WebSocketRoute.init` will be called
-            without params before callable method.
-
-        """
-        raise NotImplementedError
-
     @abstractmethod
     def add_event_listener(self, func: EventListenerType) -> None:
         raise NotImplementedError
@@ -255,7 +260,8 @@ class AbstactWSRPC(ABC):
 
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def proxy(self) -> Proxy:
         """ Special property which allow run the remote functions
         by `dot` notation
@@ -271,9 +277,47 @@ class AbstactWSRPC(ABC):
         raise NotImplementedError
 
 
-RouteType = Union[
-    Callable[[AbstactWSRPC, Any], Any],
-    Callable[[AbstactWSRPC, Any], Coroutine[Any, None, Any]],
-    AbstractRoute
+WSRPC = TypeVar("WSRPC", bound=WSRPCBase)
+RouteType = Union[Callable[..., Any], Type[AbstractRoute]]
+P = ParamSpec("P")
+
+
+class AbstractWSRPC(WSRPCBase, ABC):
+    @classmethod
+    @abstractmethod
+    def add_route(
+        cls, route: str,
+        handler: Union[
+            Callable[Concatenate[WSRPC, P], Any],
+            Type[AbstractRoute],
+        ],
+    ) -> None:
+        """ Expose local function through RPC
+
+        :param route: Name which function will be aliased for this function.
+                      Remote side should call function by this name.
+        :param handler: Function or Route class (classes based on
+                        :class:`wsrpc_aiohttp.WebSocketRoute`).
+                        For route classes the public methods will
+                        be registered automatically.
+
+        .. note::
+
+            Route classes might be initialized only once for each
+            socket instance.
+
+            In case the method of class will be called first,
+            :func:`wsrpc_aiohttp.WebSocketRoute.init` will be called
+            without params before callable method.
+
+        """
+        raise NotImplementedError
+
+
+RouteCollectionType = DefaultDict[
+    Type[AbstractWSRPC], Dict[str, RouteType],
 ]
-FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
+ClientCollectionType = DefaultDict[
+    Type[AbstractWSRPC], Dict[str, AbstractWSRPC],
+]
+EventListenerCollectionType = Set[EventListenerType]

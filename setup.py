@@ -1,4 +1,3 @@
-# encoding: utf-8
 import os
 from importlib.machinery import SourceFileLoader
 
@@ -31,38 +30,43 @@ setup(
         "Operating System :: Microsoft",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=["tests", "doc"]),
     package_data={"wsrpc_aiohttp": ["static/*", "py.typed"]},
-    install_requires=["aiohttp<4", "yarl"],
+    install_requires=[
+        "aiohttp<4",
+        "yarl",
+        'typing_extensions; python_version < "3.10.0"'
+    ],
     python_requires=">3.5.*, <4",
     extras_require={
-        "ujson": ["ujson"],
         "testing": [
             "async-timeout",
+            "coverage!=4.3",
+            "coveralls",
+            "orjson",
             "pytest",
             "pytest-aiohttp",
             "pytest-cov",
-            "coverage!=4.3",
-            "coveralls",
         ],
         "develop": [
             "async-timeout",
             "coverage!=4.3",
             "coveralls",
+            "orjson",
+            "nox",
             "pytest",
             "pytest-aiohttp",
             "pytest-cov",
-            "Sphinx",
-            "sphinxcontrib-plantuml",
+            "requests",
+            "sphinx",
             "tox>=2.4",
         ],
     },

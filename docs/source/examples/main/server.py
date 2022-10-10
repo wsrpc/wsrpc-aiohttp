@@ -7,7 +7,7 @@ from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync
 
 
 loop = asyncio.get_event_loop()
-app = aiohttp.web.Application(loop=loop)
+app = aiohttp.web.Application()
 log = logging.getLogger(__name__)
 
 
@@ -16,7 +16,7 @@ app.router.add_static("/js", STATIC_DIR)
 app.router.add_static("/", ".")
 
 
-def get_random_uuid(socket: WebSocketAsync):
+async def get_random_uuid(_: WebSocketAsync):
     return str(uuid.uuid4())
 
 

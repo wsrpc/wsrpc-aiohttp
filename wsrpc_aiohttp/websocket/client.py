@@ -1,12 +1,13 @@
+import json
 import logging
 from asyncio import Lock
-from typing import Union, Optional
+from typing import Optional, Union
 
 import aiohttp
 from yarl import URL
 
 from .common import WSRPCBase
-from .tools import Lazy, awaitable, dumps
+from .tools import Lazy, awaitable
 
 
 log = logging.getLogger(__name__)
@@ -22,17 +23,18 @@ class WSRPCClient(WSRPCBase):
         loop=None,
         timeout=None,
         session: aiohttp.ClientSession = None,
+        loads=json.loads, dumps=json.dumps,
         **kwargs
     ):
 
-        WSRPCBase.__init__(self, loop=loop, timeout=timeout)
-        self._url = URL(str(endpoint))
-        self._session = session or aiohttp.ClientSession(
-            loop=self._loop, **kwargs
+        WSRPCBase.__init__(
+            self, loop=loop, timeout=timeout, loads=loads, dumps=dumps,
         )
+        self._url = URL(str(endpoint))
+        self._session = session or aiohttp.ClientSession(**kwargs)
         self.send_lock = Lock()
 
-        self.socket = None   # type: SocketType
+        self.socket: SocketType = None
         self.closed = False
 
     # noinspection PyMethodOverriding
@@ -78,7 +80,7 @@ class WSRPCClient(WSRPCBase):
 
             async with self.send_lock:
                 return await self.socket.send_json(
-                    kwargs, dumps=lambda x: dumps(x)
+                    kwargs, dumps=self._dumps,
                 )
         except aiohttp.WebSocketError:
             self._loop.create_task(self.close())

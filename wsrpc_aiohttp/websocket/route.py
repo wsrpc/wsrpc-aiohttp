@@ -2,10 +2,11 @@ import asyncio
 import logging
 from abc import ABCMeta
 from types import MappingProxyType
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Optional
 
 from . import decorators
 from .abc import AbstractRoute, AbstractWebSocket
+
 
 log = logging.getLogger("wsrpc")
 
@@ -35,7 +36,7 @@ class RouteMeta(ABCMeta):
             attrs[key] = value
 
         instance = super(RouteMeta, cls).__new__(
-            cls, clsname, superclasses, attrs
+            cls, clsname, superclasses, attrs,
         )
 
         for key, value in attrs.items():
@@ -57,16 +58,13 @@ ProxyCollectionType = Mapping[str, Callable[..., Any]]
 
 
 class RouteBase(AbstractRoute, metaclass=RouteMeta):
-    __proxy__ = MappingProxyType({})        # type: ProxyCollectionType
-    __no_proxy__ = MappingProxyType({})     # type: ProxyCollectionType
+    __proxy__: ProxyCollectionType = MappingProxyType({})
+    __no_proxy__: ProxyCollectionType = MappingProxyType({})
 
     def __init__(self, socket: AbstractWebSocket):
         super().__init__(socket)
         self.__socket = socket
-        self.__loop = getattr(self.socket, "_loop", None)
-
-        if self.__loop is None:
-            self.__loop = asyncio.get_event_loop()
+        self.__loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def socket(self) -> AbstractWebSocket:
@@ -74,6 +72,8 @@ class RouteBase(AbstractRoute, metaclass=RouteMeta):
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
+        if not self.__loop:
+            self.__loop = asyncio.get_event_loop()
         return self.__loop
 
     def _onclose(self):

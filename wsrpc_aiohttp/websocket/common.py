@@ -1,20 +1,24 @@
 import abc
 import asyncio
+import json
 import logging
 import types
+import typing as t
 from collections import defaultdict
 from functools import partial
-import typing as t
 
 import aiohttp
 
+from wsrpc_aiohttp.signal import Signal
+
 from . import decorators
 from .abc import (
-    Proxy, AbstactWSRPC, FrameMappingItemType, RouteType, EventListenerType
+    AbstractWSRPC, ClientCollectionType, DumpsType, EventListenerCollectionType,
+    EventListenerType, FrameMappingItemType, FutureCollectionType, LoadsType,
+    LocksCollectionType, Proxy, RouteCollectionType, RouteType, TimeoutType,
 )
 from .route import Route
-from .tools import Singleton, awaitable, loads
-from wsrpc_aiohttp.signal import Signal
+from .tools import Singleton, awaitable, serializer
 
 
 class WSRPCError(Exception):
@@ -58,27 +62,16 @@ CallItem = t.NamedTuple(
 )
 
 
-RouteCollectionType = t.DefaultDict[
-    t.Type[AbstactWSRPC], t.Dict[str, RouteType]
-]
-ClientCollectionType = t.DefaultDict[
-    t.Type[AbstactWSRPC], t.Dict[str, AbstactWSRPC]
-]
-LocksCollectionType = t.DefaultDict[int, asyncio.Lock]
-FutureCollectionType = t.DefaultDict[int, asyncio.Future]
-EventListenerCollectionType = t.Set[EventListenerType]
-
-
 def _route_maker() -> t.Dict[str, RouteType]:
     return {"ping": ping}   # type: ignore
 
 
-class WSRPCBase(AbstactWSRPC):
+class WSRPCBase(AbstractWSRPC):
     """ Common WSRPC abstraction """
 
-    _ROUTES = defaultdict(_route_maker)       # type: RouteCollectionType
-    _CLIENTS = defaultdict(dict)              # type: ClientCollectionType
-    _CLEAN_LOCK_TIMEOUT = 2                   # type: t.Union[int, float]
+    _ROUTES: RouteCollectionType = defaultdict(_route_maker)
+    _CLIENTS: ClientCollectionType = defaultdict(dict)
+    _CLEAN_LOCK_TIMEOUT: t.Union[int, float] = 2
 
     __slots__ = (
         "_handlers",
@@ -96,18 +89,30 @@ class WSRPCBase(AbstactWSRPC):
     ON_CALL_SUCCESS = Signal()
     ON_CALL_FAIL = Signal()
 
-    def __init__(self, loop: asyncio.AbstractEventLoop = None,
-                 timeout: t.Union[int, float] = None):
+    _pending_tasks: t.Set[t.Union[asyncio.Task, asyncio.Handle]]
+    _handlers: t.Dict[str, RouteType]
+
+    def _dumps(self, value: t.Any) -> t.Any:
+        return self._json_dumps(value, default=serializer)
+
+    def __init__(
+        self, loop: asyncio.AbstractEventLoop = None,
+        timeout: t.Optional[TimeoutType] = None,
+        loads: LoadsType = json.loads,
+        dumps: DumpsType = json.dumps,
+    ):
+        self._json_dumps = dumps
+        self._json_loads = loads
         self._loop = loop or asyncio.get_event_loop()
-        self._handlers = {}                 # type: t.Dict[str, RouteType]
-        self._pending_tasks = set()         # type: t.Set[asyncio.Task]
+        self._handlers = {}
+        self._pending_tasks = set()
         self._serial = 0
-        self._timeout = timeout
-        self._locks = defaultdict(asyncio.Lock)     # type: LocksCollectionType
-        self._futures = defaultdict(
-            self._loop.create_future
-        )   # type: FutureCollectionType
-        self._event_listeners = set()       # type: EventListenerCollectionType
+        self._timeout: t.Optional[TimeoutType] = timeout
+        self._locks: LocksCollectionType = defaultdict(asyncio.Lock)
+        self._futures: FutureCollectionType = defaultdict(
+            self._loop.create_future,
+        )
+        self._event_listeners: EventListenerCollectionType = set()
         self._message_type_mapping = self._create_type_mapping()
 
     def _create_type_mapping(self) -> FrameMappingItemType:
@@ -117,11 +122,11 @@ class WSRPCBase(AbstactWSRPC):
                 aiohttp.WSMsgType.BINARY: self.handle_binary,
                 aiohttp.WSMsgType.CLOSE: self.close,
                 aiohttp.WSMsgType.CLOSED: self.close,
-            }
+            },
         )
 
     def _create_task(self, coro):
-        task = self._loop.create_task(coro)  # type: asyncio.Task
+        task: asyncio.Task = self._loop.create_task(coro)
         self._pending_tasks.add(task)
         task.add_done_callback(partial(self._pending_tasks.remove))
 
@@ -146,7 +151,7 @@ class WSRPCBase(AbstactWSRPC):
                 pass
             except Exception:
                 log.exception(
-                    "Unhandled exception when closing client connection"
+                    "Unhandled exception when closing client connection",
                 )
 
         if message:
@@ -165,21 +170,21 @@ class WSRPCBase(AbstactWSRPC):
         try:
             if not isinstance(call_item.method, Nothing) and call_item.serial:
                 log.debug(
-                    "Acquiring lock for %r serial %r", self, call_item.serial
+                    "Acquiring lock for %r serial %r", self, call_item.serial,
                 )
                 async with self._locks[call_item.serial]:
                     args, kwargs = self.prepare_args(call_item.params)
 
                     return await self.handle_method(
-                        call_item.method, call_item.serial, args, kwargs
+                        call_item.method, call_item.serial, args, kwargs,
                     )
             elif not isinstance(call_item.result, Nothing):
                 return await self.handle_result(
-                    call_item.serial, call_item.result
+                    call_item.serial, call_item.result,
                 )
             elif not isinstance(call_item.error, Nothing):
                 return await self.handle_error(
-                    call_item.serial, call_item.error
+                    call_item.serial, call_item.error,
                 )
             else:
                 return await self.handle_result(call_item.serial, None)
@@ -189,7 +194,7 @@ class WSRPCBase(AbstactWSRPC):
 
             if call_item.serial:
                 await self._send(
-                    error=self._format_error(e), id=call_item.serial
+                    error=self._format_error(e), id=call_item.serial,
                 )
         finally:
             self._call_later(
@@ -203,21 +208,21 @@ class WSRPCBase(AbstactWSRPC):
         if message_id and not isinstance(message_id, int):
             raise ValueError
 
-        message_method = data.get(
-            "method", Nothing()
-        )  # type: t.Union[str, Nothing, None]
+        message_method: t.Union[str, Nothing, None] = data.get(
+            "method", Nothing(),
+        )
 
-        message_result = data.get(
-            "result", Nothing()
-        )  # type: t.Union[str, Nothing, None]
+        message_result: t.Union[str, Nothing, None] = data.get(
+            "result", Nothing(),
+        )
 
-        message_error = data.get(
-            "error", Nothing()
-        )  # type: t.Union[str, Nothing, None]
+        message_error: t.Union[str, Nothing, None] = data.get(
+            "error", Nothing(),
+        )
 
-        message_params = data.get(
-            "params", None
-        )  # type: t.Union[t.List[t.Any], t.Dict[t.Any, t.Any], None]
+        message_params: t.Union[t.List[t.Any], t.Dict[t.Any, t.Any], None] = (
+            data.get("params", None)
+        )
 
         return CallItem(
             serial=message_id, method=message_method, result=message_result,
@@ -226,7 +231,7 @@ class WSRPCBase(AbstactWSRPC):
 
     async def handle_message(self, message: aiohttp.WSMessage):
         # noinspection PyTypeChecker, PyNoneFunctionAssignment
-        data = message.json(loads=loads)  # type: dict
+        data: dict = message.json(loads=self._json_loads)
         log.debug("Got message: %r", data)
 
         serial = data.get("id")
@@ -249,7 +254,7 @@ class WSRPCBase(AbstactWSRPC):
         return cls._ROUTES[cls]
 
     @classmethod
-    def get_clients(cls) -> t.Dict[str, AbstactWSRPC]:
+    def get_clients(cls) -> t.Dict[str, AbstractWSRPC]:
         return cls._CLIENTS[cls]
 
     @property
@@ -258,7 +263,7 @@ class WSRPCBase(AbstactWSRPC):
         return self.get_routes()
 
     @property
-    def clients(self) -> t.Dict[str, AbstactWSRPC]:
+    def clients(self) -> t.Dict[str, AbstractWSRPC]:
         """ Property which contains the socket clients """
         return self.get_clients()
 
@@ -361,7 +366,7 @@ class WSRPCBase(AbstactWSRPC):
 
     def _unresolvable(self, func_name, *args, **kwargs):
         raise NotImplementedError(
-            'Callback function "%r" not implemented' % func_name
+            'Callback function "%r" not implemented' % func_name,
         )
 
     def resolver(self, func_name):
@@ -396,7 +401,7 @@ class WSRPCBase(AbstactWSRPC):
             return callee
         else:
             raise NotImplementedError(
-                "Method call of {0} is not implemented".format(repr(callee))
+                "Method call of {0} is not implemented".format(repr(callee)),
             )
 
     def _get_serial(self):
@@ -443,7 +448,7 @@ class WSRPCBase(AbstactWSRPC):
 
         await self._send(**payload)
         result = await asyncio.wait_for(
-            future, timeout=timeout or self._timeout
+            future, timeout=timeout or self._timeout,
         )
         return result
 
@@ -451,7 +456,7 @@ class WSRPCBase(AbstactWSRPC):
         await self._send(**event)
 
     @classmethod
-    def add_route(cls, route: str, handler: RouteType):
+    def add_route(cls, route: str, handler: RouteType) -> None:
         """ Expose local function through RPC
 
         :param route: Name which function will be aliased for this function.
@@ -477,7 +482,7 @@ class WSRPCBase(AbstactWSRPC):
 
         cls.get_routes()[route] = handler
 
-    def add_event_listener(self, func: t.Callable[[dict], t.Any]):
+    def add_event_listener(self, func: EventListenerType):
         self._event_listeners.add(func)
 
     def remove_event_listeners(self, func):
