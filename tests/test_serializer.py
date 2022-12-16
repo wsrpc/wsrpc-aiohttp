@@ -1,25 +1,40 @@
 from typing import Any, NamedTuple
 
+import pytest
+from aiohttp.web import Application
 from wsrpc_aiohttp import WSRPCClient, serializer
 from wsrpc_aiohttp.websocket.tools import json_dumps
 
 
-async def test_call_error(client: WSRPCClient, handler):
-
+@pytest.fixture
+def application(handler, socket_path):
+    app = Application()
     handler.configure(dumps=json_dumps)
+    app.router.add_route("*", socket_path, handler)
+    return app
 
-    class CustomType(NamedTuple):
+
+async def test_call_error(client: WSRPCClient, handler):
+    class CustomType:
         name: str
         value: Any
 
+        def __init__(self, name, value):
+            self.name = name
+            self.value = value
+
     @serializer.register(CustomType)
-    def _serizlize(value: CustomType):
+    def _serialize(value: CustomType):
         return {
             "custom_type": {
                 "name": value.name,
-                "value": serializer(value.value),
+                "value": value.value,
             },
         }
+
+    assert serializer(CustomType("foo", "bar")) == {
+        "custom_type": {"name": "foo", "value": "bar"}
+    }
 
     async def handle_request(_):
         return CustomType(name="the answer", value=42)
@@ -29,4 +44,4 @@ async def test_call_error(client: WSRPCClient, handler):
     async with client:
         result = await client.call("send_custom")
 
-    assert result
+    assert result == {"custom_type": {"name": "the answer", "value": 42}}
