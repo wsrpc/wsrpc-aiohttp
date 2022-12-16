@@ -2,6 +2,7 @@ from typing import Any, NamedTuple
 
 import pytest
 from aiohttp.web import Application
+
 from wsrpc_aiohttp import WSRPCClient, serializer
 from wsrpc_aiohttp.websocket.tools import json_dumps
 
@@ -33,7 +34,7 @@ async def test_call_error(client: WSRPCClient, handler):
         }
 
     assert serializer(CustomType("foo", "bar")) == {
-        "custom_type": {"name": "foo", "value": "bar"}
+        "custom_type": {"name": "foo", "value": "bar"},
     }
 
     async def handle_request(_):

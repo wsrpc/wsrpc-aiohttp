@@ -24,7 +24,7 @@ class WSRPCClient(WSRPCBase):
         timeout=None,
         session: aiohttp.ClientSession = None,
         loads=json.loads, dumps=json.dumps,
-        **kwargs
+        **kwargs,
     ):
 
         WSRPCBase.__init__(

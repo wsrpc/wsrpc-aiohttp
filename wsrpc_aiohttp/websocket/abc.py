@@ -76,7 +76,7 @@ class AbstractWebSocket(ABC):
     @abstractmethod
     def broadcast(
         cls, func, callback=None, return_exceptions=True,
-        **kwargs: Mapping[str, Any]
+        **kwargs: Mapping[str, Any],
     ) -> asyncio.Task:
         """ Call remote function on all connected clients
 
@@ -215,7 +215,7 @@ class WSRPCBase(ABC):
     @abstractmethod
     async def call(
         self, func: str, timeout: Union[int, float] = None,
-        **kwargs: Mapping[str, Any]
+        **kwargs: Mapping[str, Any],
     ):
         """ Method for call remote function
 
