@@ -18,7 +18,7 @@ from .abc import (
     LocksCollectionType, Proxy, RouteCollectionType, RouteType, TimeoutType,
 )
 from .route import Route
-from .tools import Singleton, awaitable, serializer
+from .tools import Singleton, awaitable, json_dumps, serializer
 
 
 class WSRPCError(Exception):
@@ -92,14 +92,11 @@ class WSRPCBase(AbstractWSRPC):
     _pending_tasks: t.Set[t.Union[asyncio.Task, asyncio.Handle]]
     _handlers: t.Dict[str, RouteType]
 
-    def _dumps(self, value: t.Any) -> t.Any:
-        return self._json_dumps(value, default=serializer)
-
     def __init__(
         self, loop: asyncio.AbstractEventLoop = None,
         timeout: t.Optional[TimeoutType] = None,
         loads: LoadsType = json.loads,
-        dumps: DumpsType = json.dumps,
+        dumps: DumpsType = json_dumps,
     ):
         self._json_dumps = dumps
         self._json_loads = loads

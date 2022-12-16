@@ -15,7 +15,7 @@ from wsrpc_aiohttp.signal import Signal
 
 from .abc import TimeoutType
 from .common import ClientException, WSRPCBase
-from .tools import Lazy, awaitable
+from .tools import Lazy, awaitable, json_dumps
 
 
 global_log = logging.getLogger("wsrpc")
@@ -71,7 +71,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         client_timeout=CLIENT_TIMEOUT,
         max_concurrent_requests=MAX_CONCURRENT_REQUESTS,
         loads=json.loads,
-        dumps=json.dumps,
+        dumps=json_dumps,
     ):
         """ Configures the handler class
 
