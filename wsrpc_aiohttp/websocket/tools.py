@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import json
 from functools import singledispatch, wraps
 
 
@@ -34,6 +35,10 @@ def serializer(value):
             return {'myObject': {'foo': value.foo}}
     """
     raise ValueError("Can not serialize %r" % type(value))
+
+
+def json_dumps(*args, **kwargs) -> str:
+    return json.dumps(*args, **kwargs, default=serializer)
 
 
 @serializer.register(bytes)  # noqa: W0404
@@ -80,4 +85,5 @@ __all__ = (
     "Singleton",
     "awaitable",
     "serializer",
+    "json_dumps",
 )

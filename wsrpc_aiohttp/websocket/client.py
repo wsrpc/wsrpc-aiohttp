@@ -24,7 +24,7 @@ class WSRPCClient(WSRPCBase):
         timeout=None,
         session: aiohttp.ClientSession = None,
         loads=json.loads, dumps=json.dumps,
-        **kwargs
+        **kwargs,
     ):
 
         WSRPCBase.__init__(
@@ -80,7 +80,7 @@ class WSRPCClient(WSRPCBase):
 
             async with self.send_lock:
                 return await self.socket.send_json(
-                    kwargs, dumps=self._dumps,
+                    kwargs, dumps=self._json_dumps,
                 )
         except aiohttp.WebSocketError:
             self._loop.create_task(self.close())
