@@ -97,10 +97,9 @@ jobs:
         run: >-
           poetry run pytest \
             -vv \
-            --cov=aiormq \
+            --cov=wsrpc_aiohttp \
             --cov-report=term-missing \
             --doctest-modules \
-            --aiomisc-test-timeout=120 \
             tests
         env:
           FORCE_COLOR: 1
