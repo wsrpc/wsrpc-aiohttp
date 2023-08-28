@@ -3,8 +3,18 @@ import sys
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import (
-    Any, Callable, Coroutine, DefaultDict, Dict, Mapping, Optional, Set, Tuple,
-    Type, TypeVar, Union,
+    Any,
+    Callable,
+    Coroutine,
+    DefaultDict,
+    Dict,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
 from aiohttp import WSMessage
@@ -38,20 +48,21 @@ class AbstractWebSocket(ABC):
     @classmethod
     @abstractmethod
     def configure(
-        cls, keepalive_timeout: TimeoutType,
+        cls,
+        keepalive_timeout: TimeoutType,
         client_timeout: TimeoutType,
         max_concurrent_requests: int,
     ) -> None:
-        """ Configures the handler class
+        """Configures the handler class
 
         :param keepalive_timeout: sets timeout of client pong response
         :param client_timeout: internal lock timeout
         :param max_concurrent_requests: how many concurrent requests might
                                         be performed by each client
         """
-        raise NotImplementedError((
-            keepalive_timeout, client_timeout, max_concurrent_requests,
-        ))
+        raise NotImplementedError(
+            (keepalive_timeout, client_timeout, max_concurrent_requests)
+        )
 
     @abstractmethod
     def __await__(self) -> Coroutine:
@@ -59,7 +70,7 @@ class AbstractWebSocket(ABC):
 
     @abstractmethod
     async def authorize(self) -> bool:
-        """ Special method for authorize client.
+        """Special method for authorize client.
         If this method return True then access allowed,
         otherwise ``403 Forbidden`` will be sent.
 
@@ -80,10 +91,13 @@ class AbstractWebSocket(ABC):
     @classmethod
     @abstractmethod
     def broadcast(
-        cls, func, callback=None, return_exceptions=True,
-        **kwargs: Mapping[str, Any]
+        cls,
+        func,
+        callback=None,
+        return_exceptions=True,
+        **kwargs: Mapping[str, Any],
     ) -> asyncio.Task:
-        """ Call remote function on all connected clients
+        """Call remote function on all connected clients
 
         :param func: Remote route name
         :param callback: Function which receive responses
@@ -94,7 +108,7 @@ class AbstractWebSocket(ABC):
         raise NotImplementedError
 
     async def close(self, message: Any = None):
-        """ Cancel all pending tasks and stop this socket connection """
+        """Cancel all pending tasks and stop this socket connection"""
         raise NotImplementedError
 
 
@@ -143,14 +157,15 @@ EventListenerType = Callable[[EventType], Any]
 class WSRPCBase(ABC):
     @abstractmethod
     def __init__(
-        self, loop: Optional[asyncio.AbstractEventLoop] = None,
+        self,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
         timeout: Optional[TimeoutType] = None,
     ):
         raise NotImplementedError((loop, timeout))
 
     @abstractmethod
     async def close(self, message: Optional[WSMessage] = None):
-        """ Cancel all pending tasks """
+        """Cancel all pending tasks"""
         raise NotImplementedError
 
     @abstractmethod
@@ -181,7 +196,7 @@ class WSRPCBase(ABC):
 
     @property
     def clients(self) -> Dict[str, "AbstractWSRPC"]:
-        """ Property which contains the socket clients """
+        """Property which contains the socket clients"""
         raise NotImplementedError
 
     @abstractmethod
@@ -195,7 +210,9 @@ class WSRPCBase(ABC):
 
     @abstractmethod
     async def handle_method(
-        self, method: str, serial: int,
+        self,
+        method: str,
+        serial: int,
         args: Tuple[Tuple[Any, ...]],
         kwargs: Mapping[str, Any],
     ) -> None:
@@ -219,10 +236,12 @@ class WSRPCBase(ABC):
 
     @abstractmethod
     async def call(
-        self, func: str, timeout: Optional[TimeoutType] = None,
-        **kwargs: Mapping[str, Any]
+        self,
+        func: str,
+        timeout: Optional[TimeoutType] = None,
+        **kwargs: Mapping[str, Any],
     ):
-        """ Method for call remote function
+        """Method for call remote function
 
         Remote methods allows only kwargs as arguments.
 
@@ -260,15 +279,15 @@ class WSRPCBase(ABC):
 
     @classmethod
     def remove_route(cls, route: str, fail: bool = True):
-        """ Removes route by name. If `fail=True` an exception
-        will be raised in case the route was not found. """
+        """Removes route by name. If `fail=True` an exception
+        will be raised in case the route was not found."""
 
         raise NotImplementedError
 
     @property
     @abstractmethod
     def proxy(self) -> Proxy:
-        """ Special property which allow run the remote functions
+        """Special property which allow run the remote functions
         by `dot` notation
 
         .. code-block:: python
@@ -291,13 +310,13 @@ class AbstractWSRPC(WSRPCBase, ABC):
     @classmethod
     @abstractmethod
     def add_route(
-        cls, route: str,
+        cls,
+        route: str,
         handler: Union[
-            Callable[Concatenate[WSRPC, P], Any],
-            Type[AbstractRoute],
+            Callable[Concatenate[WSRPC, P], Any], Type[AbstractRoute]
         ],
     ) -> None:
-        """ Expose local function through RPC
+        """Expose local function through RPC
 
         :param route: Name which function will be aliased for this function.
                       Remote side should call function by this name.
@@ -319,10 +338,8 @@ class AbstractWSRPC(WSRPCBase, ABC):
         raise NotImplementedError
 
 
-RouteCollectionType = DefaultDict[
-    Type[AbstractWSRPC], Dict[str, RouteType],
-]
+RouteCollectionType = DefaultDict[Type[AbstractWSRPC], Dict[str, RouteType]]
 ClientCollectionType = DefaultDict[
-    Type[AbstractWSRPC], Dict[str, AbstractWSRPC],
+    Type[AbstractWSRPC], Dict[str, AbstractWSRPC]
 ]
 EventListenerCollectionType = Set[EventListenerType]

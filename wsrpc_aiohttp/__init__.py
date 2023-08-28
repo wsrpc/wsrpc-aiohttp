@@ -7,7 +7,6 @@ from .websocket.handler import WebSocketAsync, WebSocketBase, WebSocketThreaded
 from .websocket.route import AllowedRoute, PrefixRoute, Route, WebSocketRoute
 from .websocket.tools import serializer
 
-
 STATIC_DIR = str(Path(__file__).parent.resolve() / "static")
 
 

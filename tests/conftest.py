@@ -25,7 +25,8 @@ def socket_path():
             loads=orjson.loads,
             dumps=lambda x, **kw: orjson.dumps(x, **kw).decode(),
         ),
-    ], ids=["json", "orjson"],
+    ],
+    ids=["json", "orjson"],
 )
 def application(request, handler, socket_path):
     app = Application()
@@ -46,7 +47,8 @@ async def session(aiohttp_client, application) -> ClientSession:
             loads=orjson.loads,
             dumps=lambda x, **kw: orjson.dumps(x, **kw).decode(),
         ),
-    ], ids=["json", "orjson"],
+    ],
+    ids=["json", "orjson"],
 )
 async def client(request, session: ClientSession, socket_path) -> WSRPCClient:
     return WSRPCClient(socket_path, session=session, **request.param)

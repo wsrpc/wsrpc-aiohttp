@@ -18,7 +18,7 @@ class Lazy:
 
 @singledispatch
 def serializer(value):
-    """ singledispatch wrapped function.
+    """singledispatch wrapped function.
     You might register custom types if you want pass it to the remote side.
 
     .. code-block:: python
@@ -75,9 +75,4 @@ def awaitable(func):
     return wrap
 
 
-__all__ = (
-    "Lazy",
-    "Singleton",
-    "awaitable",
-    "serializer",
-)
+__all__ = ("Lazy", "Singleton", "awaitable", "serializer")

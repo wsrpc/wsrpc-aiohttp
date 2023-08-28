@@ -22,7 +22,6 @@ import sys
 from datetime import datetime
 from importlib.machinery import SourceFileLoader
 
-
 sys.path.insert(0, os.path.abspath(os.path.dirname("__file__")))
 
 PROJECT_PATH = os.path.abspath(
@@ -142,7 +141,7 @@ html_theme_options = {
                 """-8-8z"></path></svg>"""
             ),
             "class": "",
-        },
+        }
     ],
 }
 
@@ -187,7 +186,7 @@ latex_documents = [
         "wsrpc-aiohttp Documentation",
         "Dmitry Orlov",
         "manual",
-    ),
+    )
 ]
 
 
@@ -214,7 +213,7 @@ texinfo_documents = [
         "wsrpc-aiohttp",
         "One line description of project.",
         "Miscellaneous",
-    ),
+    )
 ]
 
 # -- Options for Epub output ----------------------------------------------

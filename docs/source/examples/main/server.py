@@ -3,8 +3,8 @@ import logging
 import uuid
 
 import aiohttp.web
-from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync
 
+from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync
 
 loop = asyncio.get_event_loop()
 app = aiohttp.web.Application()

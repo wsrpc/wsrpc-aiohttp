@@ -13,9 +13,19 @@ from wsrpc_aiohttp.signal import Signal
 
 from . import decorators
 from .abc import (
-    AbstractWSRPC, ClientCollectionType, DumpsType, EventListenerCollectionType,
-    EventListenerType, FrameMappingItemType, FutureCollectionType, LoadsType,
-    LocksCollectionType, Proxy, RouteCollectionType, RouteType, TimeoutType,
+    AbstractWSRPC,
+    ClientCollectionType,
+    DumpsType,
+    EventListenerCollectionType,
+    EventListenerType,
+    FrameMappingItemType,
+    FutureCollectionType,
+    LoadsType,
+    LocksCollectionType,
+    Proxy,
+    RouteCollectionType,
+    RouteType,
+    TimeoutType,
 )
 from .route import Route
 from .tools import Singleton, awaitable, serializer
@@ -63,11 +73,11 @@ CallItem = t.NamedTuple(
 
 
 def _route_maker() -> t.Dict[str, RouteType]:
-    return {"ping": ping}   # type: ignore
+    return {"ping": ping}  # type: ignore
 
 
 class WSRPCBase(AbstractWSRPC):
-    """ Common WSRPC abstraction """
+    """Common WSRPC abstraction"""
 
     _ROUTES: RouteCollectionType = defaultdict(_route_maker)
     _CLIENTS: ClientCollectionType = defaultdict(dict)
@@ -96,7 +106,8 @@ class WSRPCBase(AbstractWSRPC):
         return self._json_dumps(value, default=serializer)
 
     def __init__(
-        self, loop: t.Optional[asyncio.AbstractEventLoop] = None,
+        self,
+        loop: t.Optional[asyncio.AbstractEventLoop] = None,
         timeout: t.Optional[TimeoutType] = None,
         loads: LoadsType = json.loads,
         dumps: DumpsType = json.dumps,
@@ -110,7 +121,7 @@ class WSRPCBase(AbstractWSRPC):
         self._timeout: t.Optional[TimeoutType] = timeout
         self._locks: LocksCollectionType = defaultdict(asyncio.Lock)
         self._futures: FutureCollectionType = defaultdict(
-            self._loop.create_future,
+            self._loop.create_future
         )
         self._event_listeners: EventListenerCollectionType = set()
         self._message_type_mapping = self._create_type_mapping()
@@ -122,7 +133,7 @@ class WSRPCBase(AbstractWSRPC):
                 aiohttp.WSMsgType.BINARY: self.handle_binary,
                 aiohttp.WSMsgType.CLOSE: self.close,
                 aiohttp.WSMsgType.CLOSED: self.close,
-            },
+            }
         )
 
     def _create_task(self, coro):
@@ -139,7 +150,7 @@ class WSRPCBase(AbstractWSRPC):
         self._pending_tasks.add(self._loop.call_later(timer, handler))
 
     async def close(self, message=None):
-        """ Cancel all pending tasks """
+        """Cancel all pending tasks"""
 
         async def task_waiter(task):
             if not (hasattr(task, "__iter__") or hasattr(task, "__aiter__")):
@@ -151,7 +162,7 @@ class WSRPCBase(AbstractWSRPC):
                 pass
             except Exception:
                 log.exception(
-                    "Unhandled exception when closing client connection",
+                    "Unhandled exception when closing client connection"
                 )
 
         if message:
@@ -170,21 +181,21 @@ class WSRPCBase(AbstractWSRPC):
         try:
             if not isinstance(call_item.method, Nothing) and call_item.serial:
                 log.debug(
-                    "Acquiring lock for %r serial %r", self, call_item.serial,
+                    "Acquiring lock for %r serial %r", self, call_item.serial
                 )
                 async with self._locks[call_item.serial]:
                     args, kwargs = self.prepare_args(call_item.params)
 
                     return await self.handle_method(
-                        call_item.method, call_item.serial, args, kwargs,
+                        call_item.method, call_item.serial, args, kwargs
                     )
             elif not isinstance(call_item.result, Nothing):
                 return await self.handle_result(
-                    call_item.serial, call_item.result,
+                    call_item.serial, call_item.result
                 )
             elif not isinstance(call_item.error, Nothing):
                 return await self.handle_error(
-                    call_item.serial, call_item.error,
+                    call_item.serial, call_item.error
                 )
             else:
                 return await self.handle_result(call_item.serial, None)
@@ -194,39 +205,42 @@ class WSRPCBase(AbstractWSRPC):
 
             if call_item.serial:
                 await self._send(
-                    error=self._format_error(e), id=call_item.serial,
+                    error=self._format_error(e), id=call_item.serial
                 )
         finally:
             self._call_later(
-                self._CLEAN_LOCK_TIMEOUT, self.__clean_lock, call_item.serial,
+                self._CLEAN_LOCK_TIMEOUT, self.__clean_lock, call_item.serial
             )
 
     @staticmethod
     def _parse_message(data: dict) -> CallItem:
-        message_id = data.get("id")     # type: t.Optional[int]
+        message_id = data.get("id")  # type: t.Optional[int]
 
         if message_id and not isinstance(message_id, int):
             raise ValueError
 
         message_method: t.Union[str, Nothing, None] = data.get(
-            "method", Nothing(),
+            "method", Nothing()
         )
 
         message_result: t.Union[str, Nothing, None] = data.get(
-            "result", Nothing(),
+            "result", Nothing()
         )
 
         message_error: t.Union[str, Nothing, None] = data.get(
-            "error", Nothing(),
+            "error", Nothing()
         )
 
-        message_params: t.Union[t.List[t.Any], t.Dict[t.Any, t.Any], None] = (
-            data.get("params", None)
-        )
+        message_params: t.Union[
+            t.List[t.Any], t.Dict[t.Any, t.Any], None
+        ] = data.get("params", None)
 
         return CallItem(
-            serial=message_id, method=message_method, result=message_result,
-            error=message_error, params=message_params,
+            serial=message_id,
+            method=message_method,
+            result=message_result,
+            error=message_error,
+            params=message_params,
         )
 
     async def handle_message(self, message: aiohttp.WSMessage):
@@ -259,12 +273,12 @@ class WSRPCBase(AbstractWSRPC):
 
     @property
     def routes(self) -> t.Dict[str, RouteType]:
-        """ Property which contains the socket routes """
+        """Property which contains the socket routes"""
         return self.get_routes()
 
     @property
     def clients(self) -> t.Dict[str, AbstractWSRPC]:
-        """ Property which contains the socket clients """
+        """Property which contains the socket clients"""
         return self.get_clients()
 
     @staticmethod
@@ -293,10 +307,7 @@ class WSRPCBase(AbstractWSRPC):
 
     async def handle_method(self, method, serial, args, kwargs):
         await self.ON_CALL_START.call(
-            method=method,
-            serial=serial,
-            args=args,
-            kwargs=kwargs,
+            method=method, serial=serial, args=args, kwargs=kwargs
         )
         callee = self.resolver(method)
 
@@ -310,11 +321,7 @@ class WSRPCBase(AbstractWSRPC):
             result = await self._executor(func)
         except Exception as err:
             await self.ON_CALL_FAIL.call(
-                method=method,
-                serial=serial,
-                args=args,
-                kwargs=kwargs,
-                err=err,
+                method=method, serial=serial, args=args, kwargs=kwargs, err=err
             )
             raise
 
@@ -366,14 +373,12 @@ class WSRPCBase(AbstractWSRPC):
 
     def _unresolvable(self, func_name, *args, **kwargs):
         raise NotImplementedError(
-            'Callback function "%r" not implemented' % func_name,
+            'Callback function "%r" not implemented' % func_name
         )
 
     def resolver(self, func_name):
         class_name, method = (
-            func_name.split(".", 1)
-            if "." in func_name
-            else (func_name, "init")
+            func_name.split(".", 1) if "." in func_name else (func_name, "init")
         )
 
         callee = self.routes.get(class_name, self._unresolvable)
@@ -401,7 +406,7 @@ class WSRPCBase(AbstractWSRPC):
             return callee
         else:
             raise NotImplementedError(
-                "Method call of {0} is not implemented".format(repr(callee)),
+                "Method call of {0} is not implemented".format(repr(callee))
             )
 
     def _get_serial(self):
@@ -409,7 +414,7 @@ class WSRPCBase(AbstractWSRPC):
         return self._serial
 
     async def call(self, func: str, timeout=None, **kwargs):
-        """ Method for call remote function
+        """Method for call remote function
 
         Remote methods allows only kwargs as arguments.
 
@@ -440,15 +445,12 @@ class WSRPCBase(AbstractWSRPC):
         payload = dict(id=serial, method=func, params=kwargs)
 
         log.info(
-            'Sending request #%r "%s(%r)" to the client.',
-            serial,
-            func,
-            kwargs,
+            'Sending request #%r "%s(%r)" to the client.', serial, func, kwargs
         )
 
         await self._send(**payload)
         result = await asyncio.wait_for(
-            future, timeout=timeout or self._timeout,
+            future, timeout=timeout or self._timeout
         )
         return result
 
@@ -457,7 +459,7 @@ class WSRPCBase(AbstractWSRPC):
 
     @classmethod
     def add_route(cls, route: str, handler: RouteType) -> None:
-        """ Expose local function through RPC
+        """Expose local function through RPC
 
         :param route: Name which function will be aliased for this function.
                       Remote side should call function by this name.
@@ -490,8 +492,8 @@ class WSRPCBase(AbstractWSRPC):
 
     @classmethod
     def remove_route(cls, route: str, fail=True):
-        """ Removes route by name. If `fail=True` an exception
-        will be raised in case the route was not found. """
+        """Removes route by name. If `fail=True` an exception
+        will be raised in case the route was not found."""
 
         if fail:
             cls.get_routes().pop(route)
@@ -510,7 +512,7 @@ class WSRPCBase(AbstractWSRPC):
 
     @property
     def proxy(self):
-        """ Special property which allow run the remote functions
+        """Special property which allow run the remote functions
         by `dot` notation
 
         .. code-block:: python

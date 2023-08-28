@@ -1,12 +1,10 @@
 import inspect
 import logging
 
-
 log = logging.getLogger(__name__)
 
 
 class Signal:
-
     __slots__ = ("_receivers", "_is_frozen")
 
     def __init__(self):
@@ -15,8 +13,7 @@ class Signal:
     def connect(self, receiver):
         if self.is_frozen:
             raise RuntimeError(
-                "Can't connect receiver (%r) to the frozen signal",
-                receiver,
+                "Can't connect receiver (%r) to the frozen signal", receiver
             )
 
         if not inspect.iscoroutinefunction(receiver):

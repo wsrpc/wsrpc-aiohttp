@@ -1,0 +1,89 @@
+[tool.poetry]
+name = "wsrpc-aiohttp"
+version = "4.0.2"
+description = "WSRPC is the RPC over WebSocket for aiohttp"
+authors = ["Dmitry Orlov <me@mosquito.su>"]
+readme = "README.md"
+license = "Apache-2.0"
+keywords=[
+    "wsrpc", "websocket", "rpc", "json-rpc", "js", "typescript", "javascript"
+]
+homepage = "https://github.com/wsrpc/wsrpc-aiohttp"
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Internet",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX",
+    "Operating System :: Microsoft",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+packages = [{ include = "wsrpc_aiohttp" }]
+
+[tool.poetry.urls]
+"Source" = "https://github.com/wsrpc/wsrpc-aiohttp"
+"Tracker" = "https://github.com/wsrpc/wsrpc-aiohttp/issues"
+"Documentation" = "https://wsrpc.readthedocs.io/en/latest/"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+aiohttp = "<4"
+yarl = [{ version = '*'}]
+typing_extensions = [{ version = '*', python = "<3.10" }]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pylama = "^8.4.1"
+mypy = "^1.5.1"
+types-setuptools = "^65.6.0.2"
+async-timeout = "^4.0.2"
+coverage = "!=4.3"
+coveralls = "^3.3.1"
+nox = "^2022.11.21"
+orjson = "^3.8.3"
+pytest-aiohttp = "^1.0.4"
+pytest-cov = "^4.0.0"
+requests = "^2.28.1"
+sphinx = "^5.3.0"
+ruff = "^0.0.286"
+black = "^23.7.0"
+
+[tool.poetry.group.uvloop.dependencies]
+uvloop = "^0.17.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 80
+target-version = ["py38", "py39", "py310", "py311"]
+skip-magic-trailing-comma = true
+
+[tool.ruff]
+line-length = 99
+target-version = "py38"
+fix = true
+
+select = [
+  "E",       # pycodestyle (error)
+  "F",       # pyflakes
+  "I"        # isort
+]
+
+ignore = [
+  "C901"     # Function is too complex
+]
+
+[tool.ruff.isort]
+combine-as-imports = true
+extra-standard-library = ["typing_extensions"]

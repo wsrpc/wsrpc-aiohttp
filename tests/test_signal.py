@@ -50,7 +50,6 @@ async def test_connection_signals(handler, client):
 
 
 class TestSuiteAuthSignals:
-
     class AuthHandler(WebSocketAsync):
         allow_authorize = False
 
@@ -91,13 +90,11 @@ class TestSuiteAuthSignals:
 
 
 class TestSuiteCallProcedureSignals:
-
     class RPCHandler(WebSocketAsync):
         pass
 
     @pytest.fixture
     def handler(self):
-
         async def proc_success(*args, **kwargs):
             return True
 
