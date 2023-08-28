@@ -7,7 +7,6 @@ from typing import Any, Callable, Mapping, Optional
 from . import decorators
 from .abc import AbstractRoute, AbstractWebSocket
 
-
 log = logging.getLogger("wsrpc")
 
 
@@ -36,7 +35,7 @@ class RouteMeta(ABCMeta):
             attrs[key] = value
 
         instance = super(RouteMeta, cls).__new__(
-            cls, clsname, superclasses, attrs,
+            cls, clsname, superclasses, attrs
         )
 
         for key, value in attrs.items():
@@ -134,10 +133,4 @@ class WebSocketRoute(AllowedRoute):
         return decorators.noproxy(func)
 
 
-__all__ = (
-    "RouteBase",
-    "Route",
-    "WebSocketRoute",
-    "AllowedRoute",
-    "decorators",
-)
+__all__ = ("RouteBase", "Route", "WebSocketRoute", "AllowedRoute", "decorators")

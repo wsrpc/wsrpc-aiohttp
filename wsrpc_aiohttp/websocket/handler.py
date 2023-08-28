@@ -17,13 +17,12 @@ from .abc import TimeoutType
 from .common import ClientException, WSRPCBase
 from .tools import Lazy, awaitable
 
-
 global_log = logging.getLogger("wsrpc")
 log = logging.getLogger("wsrpc.handler")
 
 
 class WebSocketBase(WSRPCBase, AbstractView):
-    """ Base class for aiohttp websocket handler """
+    """Base class for aiohttp websocket handler"""
 
     __slots__ = (
         "_request",
@@ -54,8 +53,10 @@ class WebSocketBase(WSRPCBase, AbstractView):
     def __init__(self, request):
         AbstractView.__init__(self, request)
         WSRPCBase.__init__(
-            self, timeout=self.REQUEST_EXECUTION_TIMEOUT,
-            loads=self.JSON_LOADS, dumps=self.JSON_DUMPS,
+            self,
+            timeout=self.REQUEST_EXECUTION_TIMEOUT,
+            loads=self.JSON_LOADS,
+            dumps=self.JSON_DUMPS,
         )
 
         self._ping = defaultdict(self._loop.create_future)
@@ -73,7 +74,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         loads=json.loads,
         dumps=json.dumps,
     ):
-        """ Configures the handler class
+        """Configures the handler class
 
         :param dumps: json serializer
         :param loads: json deserializer
@@ -91,7 +92,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
     @classmethod
     def freeze(cls):
-        """ Freeze all signals """
+        """Freeze all signals"""
         for signal in (
             cls.ON_AUTH_SUCCESS,
             cls.ON_AUTH_FAIL,
@@ -109,7 +110,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         return self.__handle_request().__await__()
 
     async def authorize(self) -> bool:
-        """ Special method for authorize client.
+        """Special method for authorize client.
         If this method return True then access allowed,
         otherwise ``403 Forbidden`` will be sent.
 
@@ -131,23 +132,19 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
         if not await self.authorize():
             await self.ON_AUTH_FAIL.call(
-                socket=self.socket,
-                request=self.request,
+                socket=self.socket, request=self.request
             )
             raise web.HTTPForbidden()
 
         await self.ON_AUTH_SUCCESS.call(
-            socket=self.socket,
-            request=self.request,
+            socket=self.socket, request=self.request
         )
 
         try:
             await self.socket.prepare(self.request)
         except Exception as err:
             await self.ON_CONN_FAIL.call(
-                socket=self.socket,
-                request=self.request,
-                err=err,
+                socket=self.socket, request=self.request, err=err
             )
             raise
 
@@ -171,14 +168,13 @@ class WebSocketBase(WSRPCBase, AbstractView):
             return self.socket
         finally:
             await self.ON_CONN_CLOSE.call(
-                socket=self.socket,
-                request=self.request,
+                socket=self.socket, request=self.request
             )
             await self.close()
 
     @classmethod
     def broadcast(cls, func, callback=None, return_exceptions=True, **kwargs):
-        """ Call remote function on all connected clients
+        """Call remote function on all connected clients
 
         :param func: Remote route name
         :param callback: Function which receive responses
@@ -220,7 +216,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
             future.set_exception(ClientException(error))
 
     async def close(self, message=None):
-        """ Cancel all pending tasks and stop this socket connection """
+        """Cancel all pending tasks and stop this socket connection"""
         await self.socket.close()
         await super().close()
 
@@ -234,7 +230,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         log.debug(
             "CLIENTS: %s",
             Lazy(
-                lambda: "".join(["\n\t%r" % i for i in self.clients.values()]),
+                lambda: "".join(["\n\t%r" % i for i in self.clients.values()])
             ),
         )
 
@@ -244,7 +240,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 return
 
             future = asyncio.ensure_future(
-                self.call("ping", seq=self._loop.time()),
+                self.call("ping", seq=self._loop.time())
             )
 
             def on_timeout():
@@ -258,7 +254,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 future.set_exception(TimeoutError)
 
             handle = self._loop.call_later(
-                self.KEEPALIVE_PING_TIMEOUT, on_timeout,
+                self.KEEPALIVE_PING_TIMEOUT, on_timeout
             )
 
             future.add_done_callback(lambda f: handle.cancel())
@@ -300,15 +296,15 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
 
 class WebSocketAsync(WebSocketBase):
-    """ Handler class which execute any route as a coroutine """
+    """Handler class which execute any route as a coroutine"""
 
     async def _executor(self, func):
         return await awaitable(func)()
 
 
 class WebSocketThreaded(WebSocketBase):
-    """ Handler class which execute any route in the default thread-pool
-    of current event loop """
+    """Handler class which execute any route in the default thread-pool
+    of current event loop"""
 
     async def _executor(self, func):
         return await self._loop.run_in_executor(None, func)

@@ -6,8 +6,8 @@ from pathlib import Path
 from random import choice
 
 import aiohttp.web
-from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync, WebSocketRoute
 
+from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync, WebSocketRoute
 
 loop = asyncio.get_event_loop()
 log = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class TestRoute(WebSocketRoute):
         return "WTF???"
 
     async def exc(self):
-        raise Exception(u"Test Тест テスト 测试")
+        raise Exception("Test Тест テスト 测试")
 
     async def getJoke(self):
         joke = choice(self.JOKES)

@@ -5,10 +5,15 @@ import pytest
 from async_timeout import timeout
 
 from wsrpc_aiohttp import (
-    AllowedRoute, ClientException, PrefixRoute, Route, WebSocketAsync,
-    WebSocketRoute, WSRPCClient, decorators,
+    AllowedRoute,
+    ClientException,
+    PrefixRoute,
+    Route,
+    WebSocketAsync,
+    WebSocketRoute,
+    WSRPCClient,
+    decorators,
 )
-
 
 DATA_TO_RETURN = 1000
 
@@ -111,9 +116,7 @@ def route(request):
     return request.param
 
 
-async def test_call(
-    client: WSRPCClient, handler: WebSocketAsync, route: Route,
-):
+async def test_call(client: WSRPCClient, handler: WebSocketAsync, route: Route):
     async with client:
         handler.add_route("reverse", route)
 
@@ -128,7 +131,7 @@ async def test_call(
 
 
 async def test_call_when_params_none(
-    client: WSRPCClient, handler: WebSocketAsync, route: Route,
+    client: WSRPCClient, handler: WebSocketAsync, route: Route
 ):
     async with client:
         handler.add_route("reverse", route)
@@ -137,7 +140,7 @@ async def test_call_when_params_none(
 
         await client.proxy.reverse(data=data)
         await client.socket.send_json(
-            data={"id": 80, "method": "reverse.reverse"},
+            data={"id": 80, "method": "reverse.reverse"}
         )
 
         response = await client.proxy.reverse.get_data()
@@ -146,7 +149,7 @@ async def test_call_when_params_none(
 
 
 async def test_broadcast(
-    client: WSRPCClient, handler: WebSocketAsync, route: Route, event_loop,
+    client: WSRPCClient, handler: WebSocketAsync, route: Route, event_loop
 ):
     async with client:
         future = event_loop.create_future()
@@ -165,7 +168,7 @@ async def test_broadcast(
 
 
 async def test_call_masked(
-    client: WSRPCClient, handler: WebSocketAsync, route: Route,
+    client: WSRPCClient, handler: WebSocketAsync, route: Route
 ):
     async with client:
         handler.add_route("reverse", route)
@@ -191,7 +194,7 @@ async def test_call_dash_masked(client: WSRPCClient, handler: WebSocketAsync):
 
 
 async def test_call_not_proxied(
-    client: WSRPCClient, handler: WebSocketAsync, route: Route,
+    client: WSRPCClient, handler: WebSocketAsync, route: Route
 ):
     async with client:
         handler.add_route("reverse", route)

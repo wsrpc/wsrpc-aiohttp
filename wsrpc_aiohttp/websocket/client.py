@@ -14,7 +14,7 @@ SocketType = Optional[aiohttp.ClientWebSocketResponse]
 
 
 class WSRPCClient(WSRPCBase):
-    """ WSRPC Client class """
+    """WSRPC Client class"""
 
     def __init__(
         self,
@@ -22,12 +22,12 @@ class WSRPCClient(WSRPCBase):
         loop=None,
         timeout=None,
         session: Optional[aiohttp.ClientSession] = None,
-        loads=json.loads, dumps=json.dumps,
-        **kwargs
+        loads=json.loads,
+        dumps=json.dumps,
+        **kwargs,
     ):
-
         WSRPCBase.__init__(
-            self, loop=loop, timeout=timeout, loads=loads, dumps=dumps,
+            self, loop=loop, timeout=timeout, loads=loads, dumps=dumps
         )
         self._url = URL(str(endpoint))
         self._session = session or aiohttp.ClientSession(**kwargs)
@@ -38,7 +38,7 @@ class WSRPCClient(WSRPCBase):
 
     # noinspection PyMethodOverriding
     async def close(self):
-        """ Close the client connect connection """
+        """Close the client connect connection"""
 
         if self.closed:
             return
@@ -51,7 +51,7 @@ class WSRPCClient(WSRPCBase):
         await self._session.close()
 
     async def connect(self):
-        """ Perform connection to the server """
+        """Perform connection to the server"""
 
         self.socket = await self._session.ws_connect(str(self._url))
         self._create_task(self.__handle_connection())
@@ -78,15 +78,13 @@ class WSRPCClient(WSRPCBase):
                 raise aiohttp.ClientConnectionError("Connection was closed.")
 
             async with self.send_lock:
-                return await self.socket.send_json(
-                    kwargs, dumps=self._dumps,
-                )
+                return await self.socket.send_json(kwargs, dumps=self._dumps)
         except aiohttp.WebSocketError:
             self._loop.create_task(self.close())
             raise
 
     async def _executor(self, func):
-        """ Method which implements execution of the client functions """
+        """Method which implements execution of the client functions"""
         return await awaitable(func)()
 
     async def __aenter__(self):
