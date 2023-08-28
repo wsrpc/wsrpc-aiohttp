@@ -30,6 +30,11 @@ class AbstractWebSocket(ABC):
     def __init__(self, request: Request):
         raise NotImplementedError(request)
 
+    @property
+    @abstractmethod
+    def request(self) -> Request:
+        raise NotImplementedError
+
     @classmethod
     @abstractmethod
     def configure(
