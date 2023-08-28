@@ -96,7 +96,7 @@ class WSRPCBase(AbstractWSRPC):
         return self._json_dumps(value, default=serializer)
 
     def __init__(
-        self, loop: asyncio.AbstractEventLoop = None,
+        self, loop: t.Optional[asyncio.AbstractEventLoop] = None,
         timeout: t.Optional[TimeoutType] = None,
         loads: LoadsType = json.loads,
         dumps: DumpsType = json.dumps,

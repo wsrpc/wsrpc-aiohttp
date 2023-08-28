@@ -2,13 +2,12 @@ name: tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   lint:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -39,6 +38,7 @@ jobs:
           - py38
           - py39
           - py310
+          - py311
 
     steps:
       - uses: actions/checkout@v2
