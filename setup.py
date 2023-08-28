@@ -3,7 +3,6 @@ from importlib.machinery import SourceFileLoader
 
 from setuptools import find_packages, setup
 
-
 module = SourceFileLoader(
     "version", os.path.join("wsrpc_aiohttp", "version.py")
 ).load_module()
@@ -43,9 +42,9 @@ setup(
     install_requires=[
         "aiohttp<4",
         "yarl",
-        'typing_extensions; python_version < "3.10.0"'
+        'typing_extensions; python_version < "3.10.0"',
     ],
-    python_requires=">3.5.*, <4",
+    python_requires=">=3.7, <4",
     extras_require={
         "testing": [
             "async-timeout",
