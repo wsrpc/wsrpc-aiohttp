@@ -9,7 +9,6 @@ from yarl import URL
 from .common import WSRPCBase
 from .tools import Lazy, awaitable
 
-
 log = logging.getLogger(__name__)
 SocketType = Optional[aiohttp.ClientWebSocketResponse]
 
@@ -22,7 +21,7 @@ class WSRPCClient(WSRPCBase):
         endpoint: Union[URL, str],
         loop=None,
         timeout=None,
-        session: aiohttp.ClientSession = None,
+        session: Optional[aiohttp.ClientSession] = None,
         loads=json.loads, dumps=json.dumps,
         **kwargs
     ):

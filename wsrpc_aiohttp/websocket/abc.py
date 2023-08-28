@@ -1,19 +1,19 @@
 import asyncio
+import sys
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import (
-    Any, Callable, Coroutine, DefaultDict, Dict, Mapping, Set, Tuple, Type,
-    TypeVar, Union,
+    Any, Callable, Coroutine, DefaultDict, Dict, Mapping, Optional, Set, Tuple,
+    Type, TypeVar, Union,
 )
 
 from aiohttp import WSMessage
 from aiohttp.web import Request
 from aiohttp.web_ws import WebSocketResponse
 
-
-try:
+if sys.version_info >= (3, 10):
     from typing import Concatenate, ParamSpec
-except ImportError:
+else:
     from typing_extensions import Concatenate, ParamSpec
 
 
@@ -143,13 +143,13 @@ EventListenerType = Callable[[EventType], Any]
 class WSRPCBase(ABC):
     @abstractmethod
     def __init__(
-        self, loop: asyncio.AbstractEventLoop = None,
-        timeout: Union[int, float] = None,
+        self, loop: Optional[asyncio.AbstractEventLoop] = None,
+        timeout: Optional[TimeoutType] = None,
     ):
         raise NotImplementedError((loop, timeout))
 
     @abstractmethod
-    async def close(self, message: WSMessage = None):
+    async def close(self, message: Optional[WSMessage] = None):
         """ Cancel all pending tasks """
         raise NotImplementedError
 
@@ -219,7 +219,7 @@ class WSRPCBase(ABC):
 
     @abstractmethod
     async def call(
-        self, func: str, timeout: Union[int, float] = None,
+        self, func: str, timeout: Optional[TimeoutType] = None,
         **kwargs: Mapping[str, Any]
     ):
         """ Method for call remote function
@@ -259,7 +259,7 @@ class WSRPCBase(ABC):
         raise NotImplementedError
 
     @classmethod
-    def remove_route(cls, route: str, fail=True):
+    def remove_route(cls, route: str, fail: bool = True):
         """ Removes route by name. If `fail=True` an exception
         will be raised in case the route was not found. """
 
