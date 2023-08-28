@@ -69,7 +69,7 @@ target-version = ["py38", "py39", "py310", "py311"]
 skip-magic-trailing-comma = true
 
 [tool.ruff]
-line-length = 99
+line-length = 80
 target-version = "py38"
 fix = true
 
