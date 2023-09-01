@@ -1,4 +1,4 @@
-from contextlib import chdir
+import logging
 from pathlib import Path
 
 import nox
@@ -6,7 +6,7 @@ import requests
 
 
 def download(url: str, dest: Path):
-    print(f"Downloading {url}")
+    logging.info(f"Downloading %r", url)
     response = requests.get(url)
     response.raise_for_status()
     with open(dest, "wb") as fp:
@@ -23,7 +23,7 @@ def docs(session: nox.Session):
     plantuml = (Path("contrib") / "plantuml.jar").resolve()
 
     def plantuml_render(*filenames):
-        with chdir(str(docs / "source")):
+        with session.chdir(str(docs / "source")):
             session.run(
                 "java", "-jar", str(plantuml), "-tsvg",
                 "-quiet", "-progress", "-overwrite", "-nometadata",
