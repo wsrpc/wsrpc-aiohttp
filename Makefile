@@ -1,8 +1,8 @@
-.PHONY: build
+.PHONY: static
 static:
 	poetry run build_static
 
-.PHONY: build
+.PHONY: docs
 docs:
 	poetry run build_docs
 
