@@ -1,5 +1,0 @@
-# ONLY FOR ReadTheDocs
-.[develop]
-autodoc==0.5.0
-sphinxcontrib-plantuml==0.24
-furo
