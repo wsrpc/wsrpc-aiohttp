@@ -6,7 +6,7 @@ import requests
 
 
 def download(url: str, dest: Path):
-    logging.info(f"Downloading %r", url)
+    logging.info("Downloading %r", url)
     response = requests.get(url)
     response.raise_for_status()
     with open(dest, "wb") as fp:
