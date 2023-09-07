@@ -13,23 +13,13 @@ def download(url: str, dest: Path):
         for chunk in response.iter_content(chunk_size=65535):
             fp.write(chunk)
 
-
-@nox.session(reuse_venv=True)
+@nox.session(python=False)
 def tests(session: nox.Session):
-    session.install("-e", ".[develop]")
-    session.run("pytest", "--asyncio-mode=auto", "-v", "tests")
+    session.run("poetry", "run", "pytest", "--asyncio-mode=auto", "-v", "tests")
 
-
-@nox.session(reuse_venv=True)
-def lint(session: nox.Session):
-    session.install("pylama", "pyflakes<2.5")
-    session.run("pylama", "wsrpc_aiohttp", "tests")
-
-
-@nox.session(reuse_venv=True)
+@nox.session(python=False)
 def docs(session: nox.Session):
     docs = Path("docs")
-    session.install("-r", str(docs / "requirements.txt"))
     plantuml = (Path("contrib") / "plantuml.jar").resolve()
 
     def plantuml_render(*filenames):
@@ -43,22 +33,20 @@ def docs(session: nox.Session):
     plantuml_render("*.puml")
 
     with session.chdir(str(docs)):
-        session.run("sphinx-build", "source", "build")
+        session.run("poetry", "run", "sphinx-build", "source", "build")
 
 
-@nox.session(reuse_venv=True)
+@nox.session(python=False)
 def build(session: nox.Session):
-    base_url = "https://unpkg.com/@wsrpc/client/"
+    base_url = "https://unpkg.com/@wsrpc/client"
     files = "wsrpc.d.ts", "wsrpc.es6.js"
     dist_files = "wsrpc.js", "wsrpc.min.js", "wsrpc.min.js.map"
 
     dest_path = Path("wsrpc_aiohttp") / "static"
 
     for fname in files:
-        download(base_url + fname, dest_path / fname)
+        download(f'{base_url}/{fname}', dest_path / fname)
 
     for fname in dist_files:
-        download(base_url + "/dist/" + fname, dest_path / fname)
-
-    session.install("wheel")
-    session.run("python", "setup.py", "sdist", "bdist_wheel")
+        download(f'{base_url}/dist/{fname}', dest_path / fname)
+    session.run("poetry", "build")

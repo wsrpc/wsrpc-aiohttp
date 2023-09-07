@@ -144,6 +144,14 @@ Frontend code:
 </script>
 ```
 
+## Build
+
+Just run
+
+    ```bash
+    poetry run nox
+    ```
+
 ## Versioning
 
 This software follows [Semantic Versioning](http://semver.org/)

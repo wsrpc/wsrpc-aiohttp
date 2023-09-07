@@ -28,6 +28,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 packages = [{ include = "wsrpc_aiohttp" }]
+include = ["wsrpc_aiohttp/static/*"]
 
 [tool.poetry.urls]
 "Source" = "https://github.com/wsrpc/wsrpc-aiohttp"
@@ -58,6 +59,14 @@ black = "^23.7.0"
 
 [tool.poetry.group.uvloop.dependencies]
 uvloop = "^0.17.0"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+autodoc = "0.5.0"
+sphinxcontrib-plantuml = "0.24"
+furo = "*"
 
 [build-system]
 requires = ["poetry-core"]
