@@ -27,7 +27,7 @@ def docs(session: nox.Session):
             session.run(
                 "java", "-jar", str(plantuml), "-tsvg",
                 "-quiet", "-progress", "-overwrite", "-nometadata",
-                "-o", "_static", *filenames
+                "-o", "_static", *filenames, external=True,
             )
 
     plantuml_render("*.puml")
