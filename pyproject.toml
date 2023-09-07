@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wsrpc-aiohttp"
-version = "4.0.2"
+version = "4.0.3"
 description = "WSRPC is the RPC over WebSocket for aiohttp"
 authors = ["Dmitry Orlov <me@mosquito.su>"]
 readme = "README.md"
