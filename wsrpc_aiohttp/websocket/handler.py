@@ -202,7 +202,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
                 Lazy(lambda: str(kwargs.get("id"))),
                 Lazy(lambda: str(kwargs)),
             )
-            await self.socket.send_json(kwargs, dumps=self._json_dumps)
+            await self.socket.send_json(kwargs, dumps=self._dumps)
         except aiohttp.WebSocketError:
             self._create_task(self.close())
 
