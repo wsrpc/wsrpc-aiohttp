@@ -1,6 +1,5 @@
 """Development tasks. Run all with ``uv run pytask`` or select with ``-k``."""
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -30,22 +29,8 @@ def task_tests() -> None:
     )
 
 
-def task_test_docs() -> None:
-    _python("pytest", "README.md", "docs/source")
-
-
-def task_docs() -> None:
-    rtd_output = os.environ.get("READTHEDOCS_OUTPUT")
-    output = str(Path(rtd_output) / "html") if rtd_output else "docs/build/html"
-    _python(
-        "sphinx",
-        "-W",
-        "--keep-going",
-        "-b",
-        "html",
-        "docs/source",
-        output,
-    )
+def task_test_readme() -> None:
+    _python("pytest", "README.md")
 
 
 def task_build() -> None:

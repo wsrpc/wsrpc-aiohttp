@@ -23,7 +23,7 @@ jobs:
           python-version: "3.14"
           enable-cache: true
       - run: uv sync --locked
-      - run: uv run --locked pytask -k "lint or typing or docs or build"
+      - run: uv run --locked pytask -k "lint or typing or test_readme or build"
 
   tests:
     runs-on: ${{ matrix.os }}

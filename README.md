@@ -13,7 +13,7 @@ Two-way remote procedure calls over WebSockets for [aiohttp](https://docs.aiohtt
 - Receive remote errors as exceptions.
 - Observe connection and call lifecycles with asynchronous signals.
 
-Python **3.10–3.15** is tested, including **free-threaded 3.13–3.15**. See the [documentation](https://wsrpc.readthedocs.io/en/latest/) for routes, authentication, callbacks, signals and API reference.
+Python **3.10–3.15** is tested, including **free-threaded 3.13–3.15**. See the [documentation](https://docs.wsrpc.org/) for routes, authentication, callbacks, signals and API reference.
 
 ## Install
 
@@ -129,7 +129,7 @@ For a page served by the same application, load the bundled script from `/js/` a
 </script>
 ```
 
-The example selects `wss://` on HTTPS pages and `ws://` on HTTP pages. A complete browser example is in [the quick start](https://wsrpc.readthedocs.io/en/latest/00-quick-start.html).
+The example selects `wss://` on HTTPS pages and `ws://` on HTTP pages. A complete browser example is in [the quick start](https://docs.wsrpc.org/quick-start.html).
 
 ## JSON codecs
 
@@ -144,17 +144,17 @@ uv sync --locked
 uv run --locked pytask
 ```
 
-All development dependencies are in `dev`. Pytask runs linting, type checking, tests (including marked Markdown examples), documentation and package builds. Select a task with `-k`:
+All development dependencies are in `dev`. Pytask runs linting, type checking, tests (including marked README examples) and package builds. Select a task with `-k`:
 
 ```shell
 uv run --locked pytask -k tests
 uv run --locked pytask -k lint
 uv run --locked pytask -k typing
-uv run --locked pytask -k 'docs and not test_docs'
+uv run --locked pytask -k test_readme
 uv run --locked pytask -k build
 ```
 
-Documentation is written in MyST Markdown, built by Sphinx with Furo, and written to `docs/build/html`. See [the development guide](https://wsrpc.readthedocs.io/en/latest/development.html) for the test matrix and release process.
+Documentation and its runnable examples are maintained in [wsrpc/docs](https://github.com/wsrpc/docs) and published at [docs.wsrpc.org](https://docs.wsrpc.org/). See [the development guide](https://docs.wsrpc.org/aiohttp/development.html) for the test matrix and release process.
 
 ## License and versioning
 

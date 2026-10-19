@@ -31,7 +31,7 @@ dependencies = ["aiohttp", "yarl"]
 [project.urls]
 "Source" = "https://github.com/wsrpc/wsrpc-aiohttp"
 "Tracker" = "https://github.com/wsrpc/wsrpc-aiohttp/issues"
-"Documentation" = "https://wsrpc.readthedocs.io/en/latest/"
+"Documentation" = "https://docs.wsrpc.org/"
 
 [dependency-groups]
 dev = [
@@ -43,9 +43,6 @@ dev = [
     "markdown-pytest>=0.5,<1",
     "ruff>=0.14,<1",
     "mypy>=1.18,<2",
-    "sphinx>=8,<10",
-    "myst-parser>=4,<6",
-    "furo>=2025.9.25",
     # pytask 0.6 uses msgspec, which cannot build on free-threaded 3.13.
     "pytask>=0.5.8,<0.6; python_version < '3.14'",
     "pytask>=0.6,<0.7; python_version >= '3.14'",
@@ -59,13 +56,12 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-root = ""
-source-include = ["tests/**", "docs/**", "task_dev.py", "Makefile"]
-source-exclude = ["docs/build/**"]
+source-include = ["tests/**", "task_dev.py", "Makefile"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["tests", "README.md", "docs/source"]
+testpaths = ["tests", "README.md"]
 
 [tool.ruff]
 line-length = 80
