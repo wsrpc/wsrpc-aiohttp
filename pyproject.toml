@@ -1,16 +1,13 @@
-[tool.poetry]
+[project]
 name = "wsrpc-aiohttp"
 version = "4.0.4"
 description = "WSRPC is the RPC over WebSocket for aiohttp"
-authors = ["Dmitry Orlov <me@mosquito.su>"]
 readme = "README.md"
 license = "Apache-2.0"
-keywords=[
-    "wsrpc", "websocket", "rpc", "json-rpc", "js", "typescript", "javascript"
-]
-homepage = "https://github.com/wsrpc/wsrpc-aiohttp"
+keywords = ["wsrpc", "websocket", "rpc", "json-rpc", "js", "typescript", "javascript"]
+authors = [{name = "Dmitry Orlov", email = "me@mosquito.su"}]
+requires-python = ">=3.10"
 classifiers = [
-    "License :: OSI Approved :: Apache Software License",
     "Topic :: Internet",
     "Topic :: Software Development",
     "Topic :: Software Development :: Libraries",
@@ -21,77 +18,70 @@ classifiers = [
     "Operating System :: Microsoft",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
-packages = [{ include = "wsrpc_aiohttp" }]
-include = ["wsrpc_aiohttp/static/*"]
+dependencies = ["aiohttp", "yarl"]
 
-[tool.poetry.urls]
+[project.urls]
 "Source" = "https://github.com/wsrpc/wsrpc-aiohttp"
 "Tracker" = "https://github.com/wsrpc/wsrpc-aiohttp/issues"
 "Documentation" = "https://wsrpc.readthedocs.io/en/latest/"
 
-[tool.poetry.dependencies]
-python = "^3.8"
-aiohttp = "<4"
-yarl = [{ version = '*'}]
-typing_extensions = [{ version = '*', python = "<3.10" }]
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
-mypy = "^1.5.1"
-types-setuptools = "^65.6.0.2"
-async-timeout = "^4.0.2"
-coverage = "!=4.3"
-coveralls = "^3.3.1"
-nox = "^2022.11.21"
-orjson = "^3.8.3"
-pytest-aiohttp = "^1.0.4"
-pytest-cov = "^4.0.0"
-requests = "^2.28.1"
-sphinx = "^5.3.0"
-ruff = "^0.0.286"
-black = "^23.7.0"
-
-[tool.poetry.group.uvloop.dependencies]
-uvloop = "^0.17.0"
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-autodoc = "0.5.0"
-sphinxcontrib-plantuml = "0.24"
-furo = "*"
+[dependency-groups]
+dev = [
+    "pytest>=9,<10",
+    "async-timeout>=5,<6; python_version < '3.11'",
+    "pytest-asyncio>=1,<2",
+    "pytest-aiohttp>=1.1,<2",
+    "pytest-cov>=7,<8",
+    "markdown-pytest>=0.5,<1",
+    "ruff>=0.14,<1",
+    "mypy>=1.18,<2",
+    "sphinx>=8,<10",
+    "myst-parser>=4,<6",
+    "furo>=2025.9.25",
+    # pytask 0.6 uses msgspec, which cannot build on free-threaded 3.13.
+    "pytask>=0.5.8,<0.6; python_version < '3.14'",
+    "pytask>=0.6,<0.7; python_version >= '3.14'",
+]
+serializers = ["orjson>=3.11,<4"]
+uvloop = ["uvloop>=0.22,<1; sys_platform != 'win32'"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
 
-[tool.black]
-line-length = 80
-target-version = ["py38", "py39", "py310", "py311"]
-skip-magic-trailing-comma = true
+[tool.uv.build-backend]
+module-root = ""
+source-include = ["tests/**", "docs/**", "task_dev.py", "Makefile"]
+source-exclude = ["docs/build/**"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests", "README.md", "docs/source"]
 
 [tool.ruff]
 line-length = 80
-target-version = "py38"
-fix = true
+target-version = "py310"
 
-select = [
-  "E",       # pycodestyle (error)
-  "F",       # pyflakes
-  "I"        # isort
-]
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
 
-ignore = [
-  "C901"     # Function is too complex
-]
-
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
-extra-standard-library = ["typing_extensions"]
+
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+warn_unused_ignores = true
+
+[tool.pytask.ini_options]
+paths = ["task_dev.py"]
+force = true

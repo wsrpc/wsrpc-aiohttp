@@ -1,8 +1,13 @@
 import asyncio
+import sys
 import uuid
 
+if sys.version_info >= (3, 11):
+    from asyncio import timeout
+else:
+    from async_timeout import timeout
+
 import pytest
-from async_timeout import timeout
 
 from wsrpc_aiohttp import (
     AllowedRoute,
@@ -149,10 +154,10 @@ async def test_call_when_params_none(
 
 
 async def test_broadcast(
-    client: WSRPCClient, handler: WebSocketAsync, route: Route, event_loop
+    client: WSRPCClient, handler: WebSocketAsync, route: Route
 ):
     async with client:
-        future = event_loop.create_future()
+        future = asyncio.get_running_loop().create_future()
 
         async def on_broadcast(_, result):
             nonlocal future

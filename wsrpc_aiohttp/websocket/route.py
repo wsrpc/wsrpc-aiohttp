@@ -1,11 +1,10 @@
 import asyncio
 import logging
 from abc import ABCMeta
-from types import MappingProxyType
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Generic, TypeAlias
 
 from . import decorators
-from .abc import AbstractRoute, AbstractWebSocket
+from .abc import AbstractRoute, SocketT
 
 log = logging.getLogger("wsrpc")
 
@@ -13,7 +12,7 @@ log = logging.getLogger("wsrpc")
 # noinspection PyUnresolvedReferences
 class RouteMeta(ABCMeta):
     def __new__(cls, clsname, superclasses, attributedict):
-        attrs = {"__no_proxy__": set(), "__proxy__": set()}
+        attrs: dict[str, Any] = {"__no_proxy__": set(), "__proxy__": set()}
 
         for superclass in superclasses:
             if not hasattr(superclass, "__proxy__"):
@@ -34,9 +33,7 @@ class RouteMeta(ABCMeta):
 
             attrs[key] = value
 
-        instance = super(RouteMeta, cls).__new__(
-            cls, clsname, superclasses, attrs
-        )
+        instance: Any = super().__new__(cls, clsname, superclasses, attrs)
 
         for key, value in attrs.items():
             if not callable(value):
@@ -53,20 +50,20 @@ class RouteMeta(ABCMeta):
         return instance
 
 
-ProxyCollectionType = Mapping[str, Callable[..., Any]]
+ProxyCollectionType: TypeAlias = frozenset[str]
 
 
-class RouteBase(AbstractRoute, metaclass=RouteMeta):
-    __proxy__: ProxyCollectionType = MappingProxyType({})
-    __no_proxy__: ProxyCollectionType = MappingProxyType({})
+class RouteBase(AbstractRoute[SocketT], Generic[SocketT], metaclass=RouteMeta):
+    __proxy__: ProxyCollectionType = frozenset()
+    __no_proxy__: ProxyCollectionType = frozenset()
 
-    def __init__(self, socket: AbstractWebSocket):
+    def __init__(self, socket: SocketT):
         super().__init__(socket)
         self.__socket = socket
-        self.__loop: Optional[asyncio.AbstractEventLoop] = None
+        self.__loop: asyncio.AbstractEventLoop | None = None
 
     @property
-    def socket(self) -> AbstractWebSocket:
+    def socket(self) -> SocketT:
         return self.__socket
 
     @property
@@ -87,7 +84,7 @@ class RouteBase(AbstractRoute, metaclass=RouteMeta):
         return None
 
 
-class Route(RouteBase):
+class Route(RouteBase[SocketT], Generic[SocketT]):
     def _method_lookup(self, method):
         if method in self.__no_proxy__:
             raise NotImplementedError("Method masked")
@@ -106,7 +103,7 @@ class Route(RouteBase):
         return self._method_lookup(method)
 
 
-class AllowedRoute(Route):
+class AllowedRoute(Route[SocketT], Generic[SocketT]):
     @classmethod
     def __is_method_allowed__(cls, name, func):
         if name.startswith("_"):
@@ -114,7 +111,7 @@ class AllowedRoute(Route):
         return True
 
 
-class PrefixRoute(Route):
+class PrefixRoute(Route[SocketT], Generic[SocketT]):
     PREFIX = "rpc_"
 
     @classmethod
@@ -127,7 +124,7 @@ class PrefixRoute(Route):
         return super()._method_lookup(self.PREFIX + method)
 
 
-class WebSocketRoute(AllowedRoute):
+class WebSocketRoute(AllowedRoute[SocketT], Generic[SocketT]):
     @classmethod
     def noproxy(cls, func):
         return decorators.noproxy(func)

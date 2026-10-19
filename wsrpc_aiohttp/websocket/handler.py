@@ -1,11 +1,10 @@
-# encoding: utf-8
 import asyncio
 import json
 import logging
 import uuid
 from collections import defaultdict
 from functools import partial
-from typing import Optional
+from typing import Any
 
 import aiohttp
 from aiohttp import WebSocketError, web
@@ -38,17 +37,17 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
     KEEPALIVE_PING_TIMEOUT: TimeoutType = 30
     CLIENT_TIMEOUT: TimeoutType = int(KEEPALIVE_PING_TIMEOUT / 3)
-    MAX_CONCURRENT_REQUESTS: TimeoutType = 25
-    REQUEST_EXECUTION_TIMEOUT: Optional[TimeoutType] = None
+    MAX_CONCURRENT_REQUESTS: int = 25
+    REQUEST_EXECUTION_TIMEOUT: TimeoutType | None = None
 
     JSON_LOADS = staticmethod(json.loads)
     JSON_DUMPS = staticmethod(json.dumps)
 
-    ON_AUTH_SUCCESS = Signal()
-    ON_AUTH_FAIL = Signal()
-    ON_CONN_OPEN = Signal()
-    ON_CONN_CLOSE = Signal()
-    ON_CONN_FAIL = Signal()
+    ON_AUTH_SUCCESS: Signal[...] = Signal()
+    ON_AUTH_FAIL: Signal[...] = Signal()
+    ON_CONN_OPEN: Signal[...] = Signal()
+    ON_CONN_CLOSE: Signal[...] = Signal()
+    ON_CONN_FAIL: Signal[...] = Signal()
 
     def __init__(self, request):
         AbstractView.__init__(self, request)
@@ -59,7 +58,9 @@ class WebSocketBase(WSRPCBase, AbstractView):
             dumps=self.JSON_DUMPS,
         )
 
-        self._ping = defaultdict(self._loop.create_future)
+        self._ping: defaultdict[int, asyncio.Future[Any]] = defaultdict(
+            self._loop.create_future
+        )
         self.id = uuid.uuid4()
         self.protocol_version = None
         self.serial = 0
@@ -230,7 +231,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
         log.debug(
             "CLIENTS: %s",
             Lazy(
-                lambda: "".join(["\n\t%r" % i for i in self.clients.values()])
+                lambda: "".join([f"\n\t{i!r}" for i in self.clients.values()])
             ),
         )
 
@@ -266,11 +267,11 @@ class WebSocketBase(WSRPCBase, AbstractView):
 
                 delta = self._loop.time() - resp.get("seq", 0)
 
-                log.debug("%r Pong recieved: %.4f" % (self, delta))
+                log.debug(f"{self!r} Pong recieved: {delta:.4f}")
 
             except asyncio.CancelledError:
                 break
-            except (TimeoutError, asyncio.TimeoutError):
+            except TimeoutError:
                 log.info(
                     'Client "%r" connection should be '
                     "closed because ping timeout",

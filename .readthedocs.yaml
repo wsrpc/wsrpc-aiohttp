@@ -1,17 +1,14 @@
-# Required
 version: 2
-
-# Set the version of Python and other tools you might need
 build:
-  os: ubuntu-20.04
+  os: ubuntu-24.04
   tools:
-    python: "3.9"
-
-# Build documentation in the docs/ directory with Sphinx
+    python: "3.14"
+  jobs:
+    install:
+      - pip install uv
+      - uv sync --locked
+    build:
+      html:
+        - uv run --locked pytask -k "docs and not test_docs"
 sphinx:
-   configuration: docs/source/conf.py
-
-# Optionally declare the Python requirements required to build your docs
-python:
-   install:
-   - requirements: docs/requirements.txt
+  configuration: docs/source/conf.py

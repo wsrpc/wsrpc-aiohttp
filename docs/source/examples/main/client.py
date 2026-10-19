@@ -3,12 +3,9 @@ import asyncio
 from wsrpc_aiohttp import WSRPCClient
 
 
-async def main():
-    client = WSRPCClient("ws://127.0.0.1:8000/ws/")
-
-    await client.connect()
-    print(await client.proxy.uuid4())
-    await client.close()
+async def main(endpoint: str = "http://127.0.0.1:8000/ws/") -> None:
+    async with WSRPCClient(endpoint) as client:
+        print(await client.proxy.uuid4())
 
 
 if __name__ == "__main__":

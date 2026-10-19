@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from unittest.mock import Mock
 
@@ -102,7 +103,7 @@ def test_is_method_allowed():
     assert "foobar" not in FooRoute.__no_proxy__
 
 
-def test_route__init__(event_loop):
+async def test_route__init__():
     socket = Mock()
     socket._loop = object()
 
@@ -114,7 +115,7 @@ def test_route__init__(event_loop):
     route = Route(socket)
 
     assert route.socket is socket
-    assert route.loop is event_loop
+    assert route.loop is asyncio.get_running_loop()
 
 
 def test_abc_inheritance():
