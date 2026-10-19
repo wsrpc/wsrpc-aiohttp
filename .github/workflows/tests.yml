@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  PYTHONUTF8: "1"
+
 permissions:
   contents: read
 
