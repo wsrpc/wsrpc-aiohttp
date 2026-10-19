@@ -1,158 +1,151 @@
 # WSRPC aiohttp
 
-[![Github Actions](https://github.com/wsrpc/wsrpc-aiohttp/workflows/tests/badge.svg)](https://github.com/wsrpc/wsrpc-aiohttp/actions?query=branch%3Amaster)
+[![Tests](https://github.com/wsrpc/wsrpc-aiohttp/actions/workflows/tests.yml/badge.svg)](https://github.com/wsrpc/wsrpc-aiohttp/actions/workflows/tests.yml)
+[![PyPI](https://img.shields.io/pypi/v/wsrpc-aiohttp.svg)](https://pypi.org/project/wsrpc-aiohttp/)
+[![Python versions](https://img.shields.io/pypi/pyversions/wsrpc-aiohttp.svg)](https://pypi.org/project/wsrpc-aiohttp/)
+[![License](https://img.shields.io/pypi/l/wsrpc-aiohttp.svg)](LICENSE)
 
+Two-way remote procedure calls over WebSockets for [aiohttp](https://docs.aiohttp.org/). A Python or JavaScript client can call the server, and the server can call the client over the same connection.
 
-[![Latest Version](https://img.shields.io/pypi/v/wsrpc-aiohttp.svg)](https://pypi.python.org/pypi/wsrpc-aiohttp/)
+- Expose functions or stateful route classes.
+- Run asynchronous handlers or synchronous handlers in a thread pool.
+- Make concurrent calls and receive results independently.
+- Receive remote errors as exceptions.
+- Observe connection and call lifecycles with asynchronous signals.
 
-[![python wheel](https://img.shields.io/pypi/wheel/wsrpc-aiohttp.svg)](https://pypi.python.org/pypi/wsrpc-aiohttp/)
+Python **3.10–3.15** is tested, including **free-threaded 3.13–3.15**. See the [documentation](https://wsrpc.readthedocs.io/en/latest/) for routes, authentication, callbacks, signals and API reference.
 
-[![Python Versions](https://img.shields.io/pypi/pyversions/wsrpc-aiohttp.svg)](https://pypi.python.org/pypi/wsrpc-aiohttp/)
+## Install
 
-[![license](https://img.shields.io/pypi/l/wsrpc-aiohttp.svg)](https://pypi.python.org/pypi/wsrpc-aiohttp/)
+```shell
+pip install wsrpc-aiohttp
+```
 
-Easy to use minimal WebSocket Remote Procedure Call library for aiohttp
-servers.
+The Python package includes the JavaScript client. For a standalone frontend, it is also available on npm:
 
-See [online demo](https://demo.wsrpc.info/) and
-[documentation](https://docs.wsrpc.info/) with examples.
+```shell
+npm install @wsrpc/client
+```
 
-## Features
+## Start a server
 
--   Call server functions from the client side;
--   Call client functions from the server (for example to notify clients
-    about events);
--   Async connection protocol: both server or client are able to call
-    several functions and get responses as soon as each response would
-    be ready in any order.
--   Fully async server-side functions;
--   Transfer any exceptions from a client side to the server side and
-    vise versa;
--   Ready-to-use frontend-library without dependencies;
--   Thread-based websocket handler for writing fully-synchronous backend
-    code (for synchronous database drivers etc.)
--   Protected server-side methods (cliens are not able to call methods,
-    starting with underline directly);
--   Signals for introspection
+Save this as `server.py` and run `python server.py`:
 
-## Installation
-
-Install via pip:
-
-    pip install wsrpc-aiohttp
-
-Python 3.10 or newer is required, including free-threaded CPython 3.13–3.15. Messages use the standard library JSON codec. You can supply custom `loads` and `dumps` callbacks to `WSRPCClient` or `WebSocketAsync.configure()`. A custom `dumps` callback must return `str` and accept a `default` serializer keyword argument.
-
-Python module provides client js library out of the box. But for pure
-javascript applications you can install [standalone js client
-library](https://www.npmjs.com/package/@wsrpc/client) using npm:
-
-    npm install @wsrpc/client
-
-## Usage
-
-Backend code:
-
-<!-- name: test_backend_configuration -->
+<!-- name: test_readme_server -->
 ```python
-import logging
-from time import time
-
-import aiohttp.web
-from wsrpc_aiohttp import Route, STATIC_DIR, WebSocketAsync, decorators
+from aiohttp import web
+from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync
 
 
-log = logging.getLogger(__name__)
+class Socket(WebSocketAsync):
+    pass
 
 
-# This class can be called by client.
-# Connection object will have this class instance after calling route-alias.
-class TestRoute(Route):
-    # This method will be executed when client calls route-alias
-    # for the first time.
-    def init(self, **kwargs):
-        # Python __init__ must be return "self".
-        # This method might return anything.
-        return kwargs
-
-    # This method named by camelCase because the client can call it.
-    @decorators.proxy
-    async def getEpoch(self):
-
-        # You can execute functions on the client side
-        await self.do_notify()
-
-        return time()
-
-    # This method calls function on the client side
-    @decorators.proxy
-    async def do_notify(self):
-        awesome = "Somebody executed test1.getEpoch method!"
-        await self.socket.call("notify", result=awesome)
+async def echo(socket: Socket, *, message: str) -> str:
+    return message
 
 
-app = aiohttp.web.Application()
-app.router.add_route("*", "/ws/", WebSocketAsync)  # Websocket route
-app.router.add_static("/js", STATIC_DIR)  # WSRPC js library
-app.router.add_static("/", ".")  # Your static files
-
-# Stateful request
-# This is the route alias TestRoute as "test1"
-WebSocketAsync.add_route("test1", TestRoute)
-
-# Stateless request
-WebSocketAsync.add_route("test2", lambda *a, **kw: True)
+def create_app() -> web.Application:
+    Socket.add_route("echo", echo)
+    app = web.Application()
+    app.router.add_get("/ws/", Socket)
+    app.router.add_static("/js/", STATIC_DIR)
+    return app
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    aiohttp.web.run_app(app, port=8000)
+    web.run_app(create_app(), host="127.0.0.1", port=8000)
 ```
 
-Frontend code:
+## Call it from Python
 
-``` HTML
-<script type="text/javascript" src="/js/wsrpc.min.js"></script>
+Save this as `client.py` and run it while the server is running:
+
+<!-- name: example_README_2 -->
+```python
+import asyncio
+from wsrpc_aiohttp import WSRPCClient
+
+
+async def main() -> None:
+    async with WSRPCClient("http://127.0.0.1:8000/ws/") as client:
+        result = await client.proxy.echo(message="Hello from Python")
+        print(result)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Calls use keyword arguments. `await client.call("echo", message="Hello")` is equivalent to `await client.proxy.echo(message="Hello")`. The client context manager connects and closes the connection and its HTTP session.
+
+The following self-contained test starts an ephemeral server and exercises the same API:
+
+<!-- name: test_readme_round_trip -->
+```python
+import asyncio
+from aiohttp import web
+from aiohttp.test_utils import TestServer
+from wsrpc_aiohttp import WebSocketAsync, WSRPCClient
+
+
+async def round_trip() -> None:
+    class Socket(WebSocketAsync):
+        pass
+
+    Socket.add_route("echo", lambda socket, *, message: message)
+    app = web.Application()
+    app.router.add_get("/ws/", Socket)
+    async with TestServer(app) as server:
+        async with WSRPCClient(str(server.make_url("/ws/"))) as client:
+            assert await client.proxy.echo(message="Hello") == "Hello"
+
+
+asyncio.run(round_trip())
+```
+
+## Call it from a browser
+
+Load the bundled script from the server's `/js/` route, then call the same method:
+
+```html
+<script src="http://127.0.0.1:8000/js/wsrpc.min.js"></script>
 <script>
-    var url = (window.location.protocol==="https:"?"wss://":"ws://") + window.location.host + '/ws/';
-    RPC = new WSRPC(url, 8000);
-
-    // Configure client API, that can be called from server
-    RPC.addRoute('notify', function (data) {
-        console.log('Server called client route "notify":', data);
-        return data.result;
-    });
-    RPC.connect();
-
-    // Call stateful route
-    // After you call that route, server would execute 'notify' route on the
-    // client, that is registered above.
-    RPC.call('test1.getEpoch').then(function (data) {
-        console.log('Result for calling server route "test1.getEpoch": ', data);
-    }, function (error) {
-        alert(error);
-    });
-
-    // Call stateless method
-    RPC.call('test2').then(function (data) {
-        console.log('Result for calling server route "test2"', data);
-    });
+  const rpc = new WSRPC("ws://127.0.0.1:8000/ws/");
+  rpc.connect();
+  rpc.call("echo", {message: "Hello from JavaScript"})
+    .then(console.log)
+    .catch(console.error);
 </script>
 ```
 
+For an HTTPS page, use an HTTPS script URL and a `wss://` WebSocket URL. A complete browser example is in [the quick start](https://wsrpc.readthedocs.io/en/latest/00-quick-start.html).
+
+## JSON codecs
+
+Messages use the standard library `json` module. To use another codec, pass `loads` and `dumps` to `WSRPCClient` or `WebSocketAsync.configure()`. The `dumps` callback must return `str` and accept the `default` serializer keyword argument. The base installation works on free-threaded Python without a native JSON extension.
+
 ## Development
 
-Install [uv](https://docs.astral.sh/uv/), then run:
+Install [uv](https://docs.astral.sh/uv/), clone the repository, then run:
 
-```bash
+```shell
 uv sync --locked
-uv run --locked pytask         # all checks, docs and distributions
-uv run --locked pytask -k tests # pytest, including Markdown examples
-uv run --locked pytask -k lint  # Ruff checks and formatting
+uv run --locked pytask
 ```
 
-The documentation is built into `docs/build/html`. To run only the Markdown examples, use `uv run --locked pytask -k test_docs`.
+All development dependencies are in `dev`. Pytask runs linting, type checking, tests (including marked Markdown examples), documentation and package builds. Select a task with `-k`:
 
-## Versioning
+```shell
+uv run --locked pytask -k tests
+uv run --locked pytask -k lint
+uv run --locked pytask -k typing
+uv run --locked pytask -k 'docs and not test_docs'
+uv run --locked pytask -k build
+```
 
-This software follows [Semantic Versioning](http://semver.org/)
+Documentation is written in MyST Markdown, built by Sphinx with Furo, and written to `docs/build/html`. See [the development guide](https://wsrpc.readthedocs.io/en/latest/development.html) for the test matrix and release process.
+
+## License and versioning
+
+Licensed under [Apache-2.0](LICENSE). The bundled JavaScript client has its own [MIT license](wsrpc_aiohttp/static/LICENSE). Releases follow [Semantic Versioning](https://semver.org/).
