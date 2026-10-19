@@ -1,26 +1,42 @@
-API Reference
-=============
+# API Reference
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.signal
-    :members:
+   :members:
+```
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.websocket.abc
-    :members:
+   :members:
+```
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.websocket.client
-    :members:
+   :members:
+```
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.websocket.common
-    :members:
+   :members:
+```
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.websocket.decorators
-    :members:
+   :members:
+```
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.websocket.handler
-    :members:
+   :members:
+```
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.websocket.route
-    :members:
+   :members:
+```
 
+```{eval-rst}
 .. automodule:: wsrpc_aiohttp.websocket.tools
-    :members:
+   :members:
+```
+

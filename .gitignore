@@ -137,10 +137,10 @@ fabric.properties
 /temp
 .DS_Store
 
-*.min.js
-*.min.js.map
 
 node_modules/
 package-lock.json
-/wsrpc_aiohttp/static/*
 /.mypy*
+
+.pytest_cache/
+.ruff_cache/

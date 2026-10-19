@@ -2,7 +2,6 @@
 
 [![Github Actions](https://github.com/wsrpc/wsrpc-aiohttp/workflows/tests/badge.svg)](https://github.com/wsrpc/wsrpc-aiohttp/actions?query=branch%3Amaster)
 
-[![Coveralls](https://coveralls.io/repos/github/wsrpc/wsrpc-aiohttp/badge.svg?branch=master)](https://coveralls.io/github/wsrpc/wsrpc-aiohttp?branch=master)
 
 [![Latest Version](https://img.shields.io/pypi/v/wsrpc-aiohttp.svg)](https://pypi.python.org/pypi/wsrpc-aiohttp/)
 
@@ -42,11 +41,7 @@ Install via pip:
 
     pip install wsrpc-aiohttp
 
-You may want to install *optional*
-[ujson](https://pypi.python.org/pypi/ujson) library to speedup message
-serialization/deserialization:
-
-    pip install ujson
+Python 3.10 or newer is required, including free-threaded CPython 3.13–3.15. Messages use the standard library JSON codec. You can supply custom `loads` and `dumps` callbacks to `WSRPCClient` or `WebSocketAsync.configure()`. A custom `dumps` callback must return `str` and accept a `default` serializer keyword argument.
 
 Python module provides client js library out of the box. But for pure
 javascript applications you can install [standalone js client
@@ -58,12 +53,13 @@ library](https://www.npmjs.com/package/@wsrpc/client) using npm:
 
 Backend code:
 
-``` python
+<!-- name: test_backend_configuration -->
+```python
 import logging
 from time import time
 
 import aiohttp.web
-from wsrpc_aiohttp import Route, STATIC_DIR, WebSocketRoute, decorators
+from wsrpc_aiohttp import Route, STATIC_DIR, WebSocketAsync, decorators
 
 
 log = logging.getLogger(__name__)
@@ -91,24 +87,24 @@ class TestRoute(Route):
     # This method calls function on the client side
     @decorators.proxy
     async def do_notify(self):
-        awesome = 'Somebody executed test1.getEpoch method!'
-        await self.socket.call('notify', result=awesome)
+        awesome = "Somebody executed test1.getEpoch method!"
+        await self.socket.call("notify", result=awesome)
 
 
 app = aiohttp.web.Application()
 app.router.add_route("*", "/ws/", WebSocketAsync)  # Websocket route
-app.router.add_static('/js', STATIC_DIR)  # WSRPC js library
-app.router.add_static('/', ".")  # Your static files
+app.router.add_static("/js", STATIC_DIR)  # WSRPC js library
+app.router.add_static("/", ".")  # Your static files
 
 # Stateful request
 # This is the route alias TestRoute as "test1"
-WebSocketAsync.add_route('test1', TestRoute)
+WebSocketAsync.add_route("test1", TestRoute)
 
 # Stateless request
-WebSocketAsync.add_route('test2', lambda *a, **kw: True)
+WebSocketAsync.add_route("test2", lambda *a, **kw: True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     aiohttp.web.run_app(app, port=8000)
 ```
@@ -118,7 +114,7 @@ Frontend code:
 ``` HTML
 <script type="text/javascript" src="/js/wsrpc.min.js"></script>
 <script>
-    var url = (window.location.protocol==="https):"?"wss://":"ws://") + window.location.host + '/ws/';
+    var url = (window.location.protocol==="https:"?"wss://":"ws://") + window.location.host + '/ws/';
     RPC = new WSRPC(url, 8000);
 
     // Configure client API, that can be called from server
@@ -144,13 +140,20 @@ Frontend code:
 </script>
 ```
 
-## Build
+## Development
 
-Just run
+Install [uv](https://docs.astral.sh/uv/), then run:
 
-    ```bash
-    poetry run nox
-    ```
+```bash
+uv sync --locked --group docs
+make test        # pytest, including marked Markdown examples
+make linter     # Ruff checks and formatting
+make typing     # mypy
+make docs       # Sphinx + MyST + Furo, warnings are errors
+make build      # source distribution and wheel
+```
+
+The documentation is built into `docs/build/html`. To run only the Markdown examples, use `make test-docs`.
 
 ## Versioning
 

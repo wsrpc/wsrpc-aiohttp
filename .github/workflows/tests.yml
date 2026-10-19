@@ -6,76 +6,48 @@ on:
   pull_request:
     branches: [master]
 
+permissions:
+  contents: read
+
 jobs:
-  lint:
+  checks:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        linter:
-          - ruff
-          - mypy
-
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup python3.11
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v10
         with:
-          python-version: "3.11"
-      - name: Cache virtualenv
-        id: venv-cache
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ github.job }}-${{ github.ref }}
-      - run: python -m pip install poetry
-      - run: poetry install
-      - run: poetry run ${{ matrix.linter }} wsrpc_aiohttp
-        env:
-          FORCE_COLOR: 1
+          version: "0.13.1"
+          python-version: "3.14"
+          enable-cache: true
+      - run: uv sync --locked --group docs
+      - run: make linter typing docs build
 
   tests:
-    needs: lint
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    env:
+      WSRPC_EXPECT_FREE_THREADED: ${{ endsWith(matrix.python, 't') && '1' || '0' }}
     strategy:
       fail-fast: false
-
       matrix:
-        python:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-
+        os: [ubuntu-latest]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15", "3.13t", "3.14t", "3.15t"]
+        include:
+          - os: windows-latest
+            python: "3.14"
+          - os: macos-latest
+            python: "3.14"
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup python${{ matrix.python }}
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v10
         with:
-          python-version: "${{ matrix.python }}"
-      - name: Cache virtualenv
-        id: venv-cache
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ github.job }}-${{ github.ref }}-${{ matrix.python }}
-      - run: python -m pip install poetry
-      - run: poetry install --with=uvloop
-      - name: pytest
-        run: >-
-          poetry run pytest \
-            -vv \
-            --cov=wsrpc_aiohttp \
-            --cov-report=term-missing \
-            --doctest-modules \
-            tests
-        env:
-          FORCE_COLOR: 1
-
-      - run: poetry run coveralls
-        env:
-          COVERALLS_PARALLEL: "true"
-          COVERALLS_SERVICE_NAME: github
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version: "0.13.1"
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Verify free-threaded runtime
+        if: endsWith(matrix.python, 't')
+        run: uv run --locked python -c "import sys, wsrpc_aiohttp; assert not sys._is_gil_enabled()"
+      - run: uv run --locked pytest --cov=wsrpc_aiohttp --cov-report=term-missing --cov-report=xml
+      - name: Test custom JSON codecs
+        if: ${{ !endsWith(matrix.python, 't') }}
+        run: uv run --locked --group serializers pytest

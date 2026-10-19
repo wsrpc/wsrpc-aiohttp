@@ -6,6 +6,7 @@ import types
 import typing as t
 from collections import defaultdict
 from functools import partial
+from uuid import UUID
 
 import aiohttp
 
@@ -13,6 +14,7 @@ from wsrpc_aiohttp.signal import Signal
 
 from . import decorators
 from .abc import (
+    AbstractRoute,
     AbstractWSRPC,
     ClientCollectionType,
     DumpsType,
@@ -60,20 +62,16 @@ class Nothing(Singleton):
         return self.__class__.__name__
 
 
-CallItem = t.NamedTuple(
-    "CallItem",
-    (
-        ("serial", t.Optional[int]),
-        ("method", t.Union[Nothing, str, None]),
-        ("error", t.Union[Nothing, t.Any]),
-        ("result", t.Union[Nothing, t.Any]),
-        ("params", t.Optional[t.Union[t.List, t.Dict]]),
-    ),
-)
+class CallItem(t.NamedTuple):
+    serial: int | None
+    method: Nothing | str | None
+    error: Nothing | dict[str, t.Any] | None
+    result: t.Any
+    params: list[t.Any] | dict[str, t.Any] | None
 
 
-def _route_maker() -> t.Dict[str, RouteType]:
-    return {"ping": ping}  # type: ignore
+def _route_maker() -> dict[str, RouteType]:
+    return {"ping": ping}
 
 
 class WSRPCBase(AbstractWSRPC):
@@ -81,7 +79,7 @@ class WSRPCBase(AbstractWSRPC):
 
     _ROUTES: RouteCollectionType = defaultdict(_route_maker)
     _CLIENTS: ClientCollectionType = defaultdict(dict)
-    _CLEAN_LOCK_TIMEOUT: t.Union[int, float] = 2
+    _CLEAN_LOCK_TIMEOUT: int | float = 2
 
     __slots__ = (
         "_handlers",
@@ -95,20 +93,20 @@ class WSRPCBase(AbstractWSRPC):
         "_message_type_mapping",
     )
 
-    ON_CALL_START = Signal()
-    ON_CALL_SUCCESS = Signal()
-    ON_CALL_FAIL = Signal()
+    ON_CALL_START: Signal[...] = Signal()
+    ON_CALL_SUCCESS: Signal[...] = Signal()
+    ON_CALL_FAIL: Signal[...] = Signal()
 
-    _pending_tasks: t.Set[t.Union[asyncio.Task, asyncio.Handle]]
-    _handlers: t.Dict[str, RouteType]
+    _pending_tasks: set[asyncio.Task | asyncio.Handle]
+    _handlers: dict[str, AbstractRoute]
 
-    def _dumps(self, value: t.Any) -> t.Any:
+    def _dumps(self, value: t.Any) -> str:
         return self._json_dumps(value, default=serializer)
 
     def __init__(
         self,
-        loop: t.Optional[asyncio.AbstractEventLoop] = None,
-        timeout: t.Optional[TimeoutType] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        timeout: TimeoutType | None = None,
         loads: LoadsType = json.loads,
         dumps: DumpsType = json.dumps,
     ):
@@ -118,7 +116,7 @@ class WSRPCBase(AbstractWSRPC):
         self._handlers = {}
         self._pending_tasks = set()
         self._serial = 0
-        self._timeout: t.Optional[TimeoutType] = timeout
+        self._timeout: TimeoutType | None = timeout
         self._locks: LocksCollectionType = defaultdict(asyncio.Lock)
         self._futures: FutureCollectionType = defaultdict(
             self._loop.create_future
@@ -214,26 +212,22 @@ class WSRPCBase(AbstractWSRPC):
 
     @staticmethod
     def _parse_message(data: dict) -> CallItem:
-        message_id = data.get("id")  # type: t.Optional[int]
+        message_id: int | None = data.get("id")
 
         if message_id and not isinstance(message_id, int):
             raise ValueError
 
-        message_method: t.Union[str, Nothing, None] = data.get(
-            "method", Nothing()
-        )
+        message_method: str | Nothing | None = data.get("method", Nothing())
 
-        message_result: t.Union[str, Nothing, None] = data.get(
-            "result", Nothing()
-        )
+        message_result: t.Any = data.get("result", Nothing())
 
-        message_error: t.Union[str, Nothing, None] = data.get(
+        message_error: dict[str, t.Any] | Nothing | None = data.get(
             "error", Nothing()
         )
 
-        message_params: t.Union[
-            t.List[t.Any], t.Dict[t.Any, t.Any], None
-        ] = data.get("params", None)
+        message_params: list[t.Any] | dict[t.Any, t.Any] | None = data.get(
+            "params", None
+        )
 
         return CallItem(
             serial=message_id,
@@ -264,27 +258,27 @@ class WSRPCBase(AbstractWSRPC):
         self._create_task(awaitable(handler)(msg))
 
     @classmethod
-    def get_routes(cls) -> t.Dict[str, RouteType]:
+    def get_routes(cls) -> dict[str, RouteType]:
         return cls._ROUTES[cls]
 
     @classmethod
-    def get_clients(cls) -> t.Dict[str, AbstractWSRPC]:
+    def get_clients(cls) -> dict[UUID, AbstractWSRPC]:
         return cls._CLIENTS[cls]
 
     @property
-    def routes(self) -> t.Dict[str, RouteType]:
+    def routes(self) -> dict[str, RouteType]:
         """Property which contains the socket routes"""
         return self.get_routes()
 
     @property
-    def clients(self) -> t.Dict[str, AbstractWSRPC]:
+    def clients(self) -> dict[UUID, AbstractWSRPC]:
         """Property which contains the socket clients"""
         return self.get_clients()
 
     @staticmethod
     def _prepare_args(args):
-        arguments = []
-        kwargs = {}
+        arguments: list[t.Any] = []
+        kwargs: dict[str, t.Any] = {}
 
         if isinstance(args, type(None)):
             return arguments, kwargs
@@ -373,7 +367,7 @@ class WSRPCBase(AbstractWSRPC):
 
     def _unresolvable(self, func_name, *args, **kwargs):
         raise NotImplementedError(
-            'Callback function "%r" not implemented' % func_name
+            f'Callback function "{func_name!r}" not implemented'
         )
 
     def resolver(self, func_name):
@@ -381,7 +375,7 @@ class WSRPCBase(AbstractWSRPC):
             func_name.split(".", 1) if "." in func_name else (func_name, "init")
         )
 
-        callee = self.routes.get(class_name, self._unresolvable)
+        callee: t.Any = self.routes.get(class_name, self._unresolvable)
 
         if isinstance(callee, decorators.ProxyBase):
             callee = callee.func
@@ -389,10 +383,7 @@ class WSRPCBase(AbstractWSRPC):
         condition = (
             callee == self._unresolvable
             or isinstance(getattr(callee, "__self__", None), Route)
-            or (
-                not isinstance(callee, (types.FunctionType, types.MethodType))
-                and issubclass(callee, Route)
-            )
+            or (isinstance(callee, type) and issubclass(callee, Route))
         )
 
         if condition:
@@ -406,7 +397,7 @@ class WSRPCBase(AbstractWSRPC):
             return callee
         else:
             raise NotImplementedError(
-                "Method call of {0} is not implemented".format(repr(callee))
+                f"Method call of {repr(callee)} is not implemented"
             )
 
     def _get_serial(self):
@@ -502,9 +493,9 @@ class WSRPCBase(AbstractWSRPC):
 
     def __repr__(self):
         if hasattr(self, "id"):
-            return "<RPCWebSocket: ID[{0}]>".format(self.id)
+            return f"<RPCWebSocket: ID[{self.id}]>"
         else:
-            return "<RPCWebsocket: {0} (waiting)>".format(self.__hash__())
+            return f"<RPCWebsocket: {self.__hash__()} (waiting)>"
 
     @abc.abstractmethod
     async def _executor(self, func):

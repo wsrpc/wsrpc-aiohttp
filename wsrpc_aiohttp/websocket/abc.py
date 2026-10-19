@@ -1,38 +1,28 @@
 import asyncio
-import sys
 from abc import ABC, abstractmethod
+from collections import defaultdict
+from collections.abc import Callable, Generator, Mapping
 from enum import IntEnum
 from typing import (
     Any,
-    Callable,
-    Coroutine,
-    DefaultDict,
-    Dict,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
-    Type,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    TypeAlias,
     TypeVar,
-    Union,
 )
+from uuid import UUID
 
 from aiohttp import WSMessage
 from aiohttp.web import Request
 from aiohttp.web_ws import WebSocketResponse
 
-if sys.version_info >= (3, 10):
-    from typing import Concatenate, ParamSpec
-else:
-    from typing_extensions import Concatenate, ParamSpec
-
-
-FrameMappingItemType = Mapping[IntEnum, Callable[[WSMessage], Any]]
-LocksCollectionType = DefaultDict[int, asyncio.Lock]
-FutureCollectionType = DefaultDict[int, asyncio.Future]
-TimeoutType = Union[int, float]
-LoadsType = Callable[..., Any]
-DumpsType = Callable[..., str]
+FrameMappingItemType: TypeAlias = Mapping[IntEnum, Callable[[WSMessage], Any]]
+LocksCollectionType: TypeAlias = defaultdict[int, asyncio.Lock]
+FutureCollectionType: TypeAlias = defaultdict[int, asyncio.Future[Any]]
+TimeoutType: TypeAlias = int | float
+LoadsType: TypeAlias = Callable[..., Any]
+DumpsType: TypeAlias = Callable[..., str]
 
 
 class AbstractWebSocket(ABC):
@@ -65,7 +55,7 @@ class AbstractWebSocket(ABC):
         )
 
     @abstractmethod
-    def __await__(self) -> Coroutine:
+    def __await__(self) -> Generator[Any, None, WebSocketResponse]:
         raise NotImplementedError
 
     @abstractmethod
@@ -95,7 +85,7 @@ class AbstractWebSocket(ABC):
         func,
         callback=None,
         return_exceptions=True,
-        **kwargs: Mapping[str, Any],
+        **kwargs: Any,
     ) -> asyncio.Task:
         """Call remote function on all connected clients
 
@@ -112,13 +102,22 @@ class AbstractWebSocket(ABC):
         raise NotImplementedError
 
 
-class AbstractRoute:
+SocketT = TypeVar("SocketT", bound="WSRPCBase")
+
+
+class AbstractRoute(Generic[SocketT]):
+    def __call__(self, method: str) -> Callable[..., Any]:
+        raise NotImplementedError
+
+    def _onclose(self) -> Any:
+        pass
+
     # noinspection PyUnusedLocal
-    def __init__(self, socket: AbstractWebSocket):
+    def __init__(self, socket: SocketT):
         pass
 
     @property
-    def socket(self) -> AbstractWebSocket:
+    def socket(self) -> SocketT:
         raise NotImplementedError
 
     @property
@@ -150,21 +149,21 @@ class Proxy:
         return ProxyMethod(self.__call, item)
 
 
-EventType = Mapping[str, Any]
-EventListenerType = Callable[[EventType], Any]
+EventType: TypeAlias = Mapping[str, Any]
+EventListenerType: TypeAlias = Callable[[EventType], Any]
 
 
 class WSRPCBase(ABC):
     @abstractmethod
     def __init__(
         self,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        timeout: Optional[TimeoutType] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        timeout: TimeoutType | None = None,
     ):
         raise NotImplementedError((loop, timeout))
 
     @abstractmethod
-    async def close(self, message: Optional[WSMessage] = None):
+    async def close(self, message: WSMessage | None = None):
         """Cancel all pending tasks"""
         raise NotImplementedError
 
@@ -186,21 +185,21 @@ class WSRPCBase(ABC):
         raise NotImplementedError
 
     @classmethod
-    def get_clients(cls) -> Dict[str, "AbstractWSRPC"]:
+    def get_clients(cls) -> dict[UUID, "AbstractWSRPC"]:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def routes(self) -> Dict[str, "RouteType"]:
+    def routes(self) -> dict[str, "RouteType"]:
         raise NotImplementedError
 
     @property
-    def clients(self) -> Dict[str, "AbstractWSRPC"]:
+    def clients(self) -> dict[UUID, "AbstractWSRPC"]:
         """Property which contains the socket clients"""
         raise NotImplementedError
 
     @abstractmethod
-    def prepare_args(self, args) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    def prepare_args(self, args) -> tuple[list[Any], dict[str, Any]]:
         raise NotImplementedError
 
     @staticmethod
@@ -213,7 +212,7 @@ class WSRPCBase(ABC):
         self,
         method: str,
         serial: int,
-        args: Tuple[Tuple[Any, ...]],
+        args: list[Any],
         kwargs: Mapping[str, Any],
     ) -> None:
         raise NotImplementedError
@@ -238,8 +237,8 @@ class WSRPCBase(ABC):
     async def call(
         self,
         func: str,
-        timeout: Optional[TimeoutType] = None,
-        **kwargs: Mapping[str, Any],
+        timeout: TimeoutType | None = None,
+        **kwargs: Any,
     ):
         """Method for call remote function
 
@@ -302,7 +301,7 @@ class WSRPCBase(ABC):
 
 
 WSRPC = TypeVar("WSRPC", bound=WSRPCBase)
-RouteType = Union[Callable[..., Any], Type[AbstractRoute]]
+RouteType: TypeAlias = Callable[..., Any] | type[AbstractRoute]
 P = ParamSpec("P")
 
 
@@ -312,9 +311,7 @@ class AbstractWSRPC(WSRPCBase, ABC):
     def add_route(
         cls,
         route: str,
-        handler: Union[
-            Callable[Concatenate[WSRPC, P], Any], Type[AbstractRoute]
-        ],
+        handler: Callable[Concatenate[WSRPC, P], Any] | type[AbstractRoute],
     ) -> None:
         """Expose local function through RPC
 
@@ -338,8 +335,10 @@ class AbstractWSRPC(WSRPCBase, ABC):
         raise NotImplementedError
 
 
-RouteCollectionType = DefaultDict[Type[AbstractWSRPC], Dict[str, RouteType]]
-ClientCollectionType = DefaultDict[
-    Type[AbstractWSRPC], Dict[str, AbstractWSRPC]
+RouteCollectionType: TypeAlias = defaultdict[
+    type[AbstractWSRPC], dict[str, RouteType]
 ]
-EventListenerCollectionType = Set[EventListenerType]
+ClientCollectionType: TypeAlias = defaultdict[
+    type[AbstractWSRPC], dict[UUID, AbstractWSRPC]
+]
+EventListenerCollectionType: TypeAlias = set[EventListenerType]

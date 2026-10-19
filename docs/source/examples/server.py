@@ -9,7 +9,6 @@ import aiohttp.web
 
 from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync, WebSocketRoute
 
-loop = asyncio.get_event_loop()
 log = logging.getLogger(__name__)
 
 
@@ -40,7 +39,7 @@ class TestRoute(WebSocketRoute):
 
     async def delayed(self, delay=0):
         await asyncio.sleep(delay)
-        return "I'm delayed {0} seconds".format(delay)
+        return f"I'm delayed {delay} seconds"
 
     async def getEpoch(self):
         return time.time()

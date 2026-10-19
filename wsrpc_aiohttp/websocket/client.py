@@ -1,7 +1,7 @@
 import json
 import logging
 from asyncio import Lock
-from typing import Optional, Union
+from typing import TypeAlias, cast
 
 import aiohttp
 from yarl import URL
@@ -10,7 +10,7 @@ from .common import WSRPCBase
 from .tools import Lazy, awaitable
 
 log = logging.getLogger(__name__)
-SocketType = Optional[aiohttp.ClientWebSocketResponse]
+SocketType: TypeAlias = aiohttp.ClientWebSocketResponse | None
 
 
 class WSRPCClient(WSRPCBase):
@@ -18,10 +18,10 @@ class WSRPCClient(WSRPCBase):
 
     def __init__(
         self,
-        endpoint: Union[URL, str],
+        endpoint: URL | str,
         loop=None,
         timeout=None,
-        session: Optional[aiohttp.ClientSession] = None,
+        session: aiohttp.ClientSession | None = None,
         loads=json.loads,
         dumps=json.dumps,
         **kwargs,
@@ -37,7 +37,7 @@ class WSRPCClient(WSRPCBase):
         self.closed = False
 
     # noinspection PyMethodOverriding
-    async def close(self):
+    async def close(self, message: aiohttp.WSMessage | None = None):
         """Close the client connect connection"""
 
         if self.closed:
@@ -53,10 +53,13 @@ class WSRPCClient(WSRPCBase):
     async def connect(self):
         """Perform connection to the server"""
 
-        self.socket = await self._session.ws_connect(str(self._url))
+        self.socket = cast(
+            SocketType, await self._session.ws_connect(str(self._url))
+        )
         self._create_task(self.__handle_connection())
 
     async def __handle_connection(self):
+        assert self.socket is not None
         while True:
             async for message in self.socket:  # type: aiohttp.WSMessage
                 await self._on_message(message)
@@ -74,7 +77,7 @@ class WSRPCClient(WSRPCBase):
                 Lazy(lambda: kwargs),
             )
 
-            if self.socket.closed:
+            if self.socket is None or self.socket.closed:
                 raise aiohttp.ClientConnectionError("Connection was closed.")
 
             async with self.send_lock:
