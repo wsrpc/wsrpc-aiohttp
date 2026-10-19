@@ -1,36 +1,28 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Title</title>
-  <script type="text/javascript" src="/js/wsrpc.js"></script>
-
-  <script type="text/javascript">
-    RPC = new WSRPC('/ws/', 5000);
-    RPC.connect();
-  </script>
-  <style>
-  body {font-family: "Arial", serif; margin: 10px; background-color: #eee;}
-  input {width: 300px;}
-  input, button { display: inline-block; border: 1px solid black;}
-</style>
+  <meta charset="utf-8">
+  <title>WSRPC quick start</title>
+  <script src="/js/wsrpc.min.js"></script>
 </head>
 <body>
-  <input disabled id="text-field"/>
-  <button id="btn">Get UUID</button>
+  <label>UUID <input id="result" readonly></label>
+  <button id="generate" type="button">Generate UUID</button>
+  <p id="error" role="alert"></p>
   <script>
-    var textField = document.getElementById('text-field');
-    var btn = document.getElementById('btn');
+    const url = new URL("/ws/", window.location.href);
+    url.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const rpc = new WSRPC(url.toString());
+    rpc.connect();
 
-    btn.onclick = function () {
-      RPC.call('uuid4').then(function (result) {
-        textField.value = result;
-      }, function (error) {
-        alert("Error when call 'uuid4' from remote side: " + error);
-      });
-    }
+    document.getElementById("generate").addEventListener("click", async () => {
+      document.getElementById("error").textContent = "";
+      try {
+        document.getElementById("result").value = await rpc.call("uuid4");
+      } catch (error) {
+        document.getElementById("error").textContent = error.message || String(error);
+      }
+    });
   </script>
 </body>
 </html>
-
-

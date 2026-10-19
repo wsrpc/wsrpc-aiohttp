@@ -1,49 +1,51 @@
 # Quick start
 
-Let's try to write simple http server with WSRPC handler.
+This example exposes a `uuid4` method, serves the bundled JavaScript client, and provides both Python and browser clients.
+
+## Run the server
+
+From the repository root, install the development environment and start the example:
+
+```shell
+uv sync --locked
+uv run --locked python docs/source/examples/main/server.py
+```
+
+The server listens on `http://127.0.0.1:8000`. Its static directory is resolved relative to the script, so the command works from the repository root.
 
 ```{literalinclude} examples/main/server.py
 :language: python
 ```
 
-Next you have two options:
+`Socket` is a dedicated handler class. Registering its routes keeps them separate from applications using another handler class. Each exposed function receives the current connection as its first argument.
 
-1. Browser WSRPC client.
-2. Python WSRPC client.
+## Call from Python
 
-## Browser client
+In another terminal:
 
-```{literalinclude} examples/main/web-client.html
-:language: html
+```shell
+uv run --locked python docs/source/examples/main/client.py
 ```
-
-You can try it on http://localhost:8000/web-client.html (required running server.py).
-
-```{image} _static/web-client-demo.gif
-
-```
-
-## Python client
 
 ```{literalinclude} examples/main/client.py
 :language: python
 ```
 
-This is so useful for testing and shell scripts for your services.
+The context manager connects the client on entry and closes the connection and its HTTP session on exit. Create clients inside an asynchronous function and start it with `asyncio.run()`.
 
+## Call from a browser
 
-## How it works
+Open <http://127.0.0.1:8000/web-client.html> and click **Generate UUID**.
 
-The following sequence diagram probably to explain some high level of the data-flow.
-
-```{image} _static/explanation.svg
-
+```{literalinclude} examples/main/web-client.html
+:language: html
 ```
 
+The page constructs a WebSocket URL from its own origin, selecting `ws://` for HTTP and `wss://` for HTTPS. The script is served at `/js/wsrpc.min.js` from the installed Python package.
 
-## A complete Python round trip
+## Test a complete round trip
 
-This example starts a local server, makes a real WebSocket call, and closes both sides. The ephemeral port makes it suitable for tests too.
+For tests or scripts that need a temporary server, `aiohttp.test_utils.TestServer` selects an available local port. This example is executed by markdown-pytest:
 
 <!-- name: test_websocket_round_trip -->
 ```python
@@ -53,11 +55,11 @@ from aiohttp.test_utils import TestServer
 from wsrpc_aiohttp import WebSocketAsync, WSRPCClient
 
 
-async def main():
+async def main() -> None:
     class Socket(WebSocketAsync):
         pass
 
-    async def multiply(socket, *, x, y):
+    async def multiply(socket: Socket, *, x: int, y: int) -> int:
         return x * y
 
     Socket.add_route("multiply", multiply)
@@ -69,4 +71,12 @@ async def main():
 
 
 asyncio.run(main())
+```
+
+## Message flow
+
+Either side can initiate a call while earlier calls are still running. Responses carry the request identifier, so they can arrive in a different order from the requests.
+
+```{image} _static/explanation.svg
+:alt: Request and response flow between a WebSocket server and client
 ```

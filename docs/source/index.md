@@ -1,58 +1,33 @@
 # WSRPC aiohttp
 
-[wsrpc-aiohttp](https://github.com/wsrpc/wsrpc-aiohttp) is a library for live web applications with two-way RPC over WebSockets.
+WSRPC provides two-way remote procedure calls over WebSockets for [aiohttp](https://docs.aiohttp.org/). Both peers can expose methods, make concurrent calls and receive results or remote exceptions over one connection.
 
-## Features
+Use functions for simple endpoints, route classes for state attached to a connection, and asynchronous signals to observe calls and connections. Python and JavaScript clients share the same RPC interface.
 
-- Call server functions from a Python or JavaScript client.
-- Call client functions from the server, including during another RPC call.
-- Run asynchronous handlers or synchronous handlers in a thread pool.
-- Use functions or stateful route classes and protect private methods.
-- Transfer results and errors asynchronously, in any order.
-- Observe connections and procedure calls through signals.
-- Serialize messages with standard JSON or custom codecs.
-- Support regular and free-threaded CPython.
+Python **3.10–3.15** is tested, including **free-threaded 3.13–3.15**. The base installation uses standard-library JSON and has no dependency on a native JSON extension.
 
-## Installation
-
-Python 3.10 or newer is required.
+## Install
 
 ```shell
 pip install wsrpc-aiohttp
 ```
 
-For JavaScript applications, the standalone client is available on npm:
+The wheel includes the JavaScript client served through `wsrpc_aiohttp.STATIC_DIR`. For a separate frontend project:
 
 ```shell
 npm install @wsrpc/client
 ```
 
-The base installation supports free-threaded CPython 3.13–3.15. To use another codec, pass `loads` and `dumps` to `WSRPCClient` or `WebSocketAsync.configure()`. The `dumps` callback must return `str` and accept the `default` serializer keyword argument.
-
-## Development
-
-Install [uv](https://docs.astral.sh/uv/), then:
-
-```shell
-git clone https://github.com/wsrpc/wsrpc-aiohttp.git
-cd wsrpc-aiohttp
-uv sync --locked
-uv run --locked pytask
-```
-
-The `tests` task also executes the marked Python examples in the Markdown documentation with markdown-pytest. The `docs` task builds Sphinx HTML with MyST and Furo, treating warnings as errors. The HTML is written to `docs/build/html`.
-
-## Contents
+Start with the [quick start](00-quick-start.md), then read about [routes and connections](01-introduction.md).
 
 ```{toctree}
-:maxdepth: 3
+:maxdepth: 2
 
 00-quick-start
 01-introduction
 02-signals
+development
 apidoc
 ```
 
-## Contributors
-
-- [@mosquito](https://github.com/mosquito) (author)
+Source code and issue tracker: [wsrpc/wsrpc-aiohttp](https://github.com/wsrpc/wsrpc-aiohttp). Created by [Dmitry Orlov](https://github.com/mosquito). The Python library is licensed under Apache-2.0; the bundled JavaScript client is licensed under MIT.

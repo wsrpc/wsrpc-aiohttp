@@ -250,13 +250,13 @@ class WSRPCBase(ABC):
 
             async def remote_function(socket: WSRPCBase, *, foo, bar):
                 # call function from the client-side
-                await self.socket.proxy.ping()
+                await socket.proxy.ping()
                 return foo + bar
 
             class RemoteClass(WebSocketRoute):
 
                 # this method executes when remote side call route name
-                asyc def init(self):
+                async def init(self):
                     # call function from the client-side
                     await self.socket.proxy.ping()
 
@@ -327,9 +327,10 @@ class AbstractWSRPC(WSRPCBase, ABC):
             Route classes might be initialized only once for each
             socket instance.
 
-            In case the method of class will be called first,
-            :func:`wsrpc_aiohttp.WebSocketRoute.init` will be called
-            without params before callable method.
+            A route instance is created lazily for each connection.
+            Calling the bare route name resolves its exposed ``init``
+            method; ``init`` is not called automatically before other
+            methods.
 
         """
         raise NotImplementedError

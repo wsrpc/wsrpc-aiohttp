@@ -1,26 +1,29 @@
 import logging
 import uuid
+from pathlib import Path
 
-import aiohttp.web
+from aiohttp import web
 
 from wsrpc_aiohttp import STATIC_DIR, WebSocketAsync
 
-app = aiohttp.web.Application()
-log = logging.getLogger(__name__)
+
+class Socket(WebSocketAsync):
+    pass
 
 
-app.router.add_route("*", "/ws/", WebSocketAsync)
-app.router.add_static("/js", STATIC_DIR)
-app.router.add_static("/", ".")
-
-
-async def get_random_uuid(_: WebSocketAsync):
+async def get_random_uuid(socket: Socket) -> str:
     return str(uuid.uuid4())
 
 
-WebSocketAsync.add_route("uuid4", get_random_uuid)
+def create_app() -> web.Application:
+    Socket.add_route("uuid4", get_random_uuid)
+    app = web.Application()
+    app.router.add_get("/ws/", Socket)
+    app.router.add_static("/js/", STATIC_DIR)
+    app.router.add_static("/", Path(__file__).parent)
+    return app
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    aiohttp.web.run_app(app, port=8000)
+    logging.basicConfig(level=logging.INFO)
+    web.run_app(create_app(), host="127.0.0.1", port=8000)

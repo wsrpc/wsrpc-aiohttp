@@ -21,17 +21,14 @@ class WebSocket(WebSocketAsync):
         )
 
 
-class TestRoute(WebSocketRoute):
+class TestRoute(WebSocketRoute[WebSocket]):
     JOKES = [
-        "[ $[ $RANDOM % 6 ] == 0 ] && rm -rf / || echo *Click*",
-        "It’s always a long day, 86,400 won’t fit into a short.",
-        "Programming is like sex:\nOne mistake and you have to support"
-        " it for the rest of your life.",
-        "There are three kinds of lies: lies, damned lies, and benchmarks.",
+        "There are two hard problems: cache invalidation, naming, "
+        "and off-by-one errors.",
+        "There are 10 kinds of people: those who understand binary "
+        "and those who do not.",
         "The generation of random numbers is too important "
         "to be left to chance.",
-        "A SQL query goes to a restaurant, walks up to 2 "
-        "tables and says “Can I join you”?",
     ]
 
     def init(self, **kwargs):
@@ -48,7 +45,7 @@ class TestRoute(WebSocketRoute):
         return True
 
     async def _secure_method(self):
-        return "WTF???"
+        return "This private method is not exposed"
 
     async def exc(self):
         raise Exception("Test Тест テスト 测试")
