@@ -46,7 +46,9 @@ dev = [
     "sphinx>=8,<10",
     "myst-parser>=4,<6",
     "furo>=2025.9.25",
-    "pytask>=0.6,<0.7",
+    # pytask 0.6 uses msgspec, which cannot build on free-threaded 3.13.
+    "pytask>=0.5.8,<0.6; python_version < '3.14'",
+    "pytask>=0.6,<0.7; python_version >= '3.14'",
 ]
 serializers = ["orjson>=3.11,<4"]
 uvloop = ["uvloop>=0.22,<1; sys_platform != 'win32'"]
