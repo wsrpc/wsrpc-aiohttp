@@ -8,10 +8,6 @@
         RPC = new WSRPC("/ws/", 5000);
         RPC.connect();
 
-		async function test(func, args) {
-            return await RPC.call(func, args);
-        }
-
         function writeResponse(result) {
 			var responseEl = document.getElementById('response');
 
@@ -28,15 +24,16 @@
             return confirm(data.joke + '\n\nThat was funny?');
         });
 
-        function run() {
-            var fn = document.getElementById('func').value;
-            var args = JSON.parse(document.getElementById('args').value);
-
-            test(fn, args).then(
-                writeResponse,
-				function (e) { alert(e.type + '("' + e.message + '")'); }
-			);
-		}
+        async function run() {
+            try {
+                const fn = document.getElementById('func').value;
+                const args = JSON.parse(document.getElementById('args').value);
+                const result = await RPC.call(fn, args);
+                writeResponse(result);
+            } catch (error) {
+                alert((error.type || error.name) + '("' + error.message + '")');
+            }
+        }
 
 	</script>
 	<link rel="stylesheet" href="just-grid.css"/>

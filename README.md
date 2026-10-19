@@ -115,9 +115,17 @@ For a page served by the same application, load the bundled script from `/js/` a
   const url = scheme + "//" + window.location.host + "/ws/";
   const rpc = new WSRPC(url);
   rpc.connect();
-  rpc.call("echo", {message: "Hello from JavaScript"})
-    .then(console.log)
-    .catch(console.error);
+
+  async function echo() {
+    try {
+      const result = await rpc.call("echo", {message: "Hello from JavaScript"});
+      console.log(result);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  echo();
 </script>
 ```
 
