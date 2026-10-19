@@ -37,14 +37,10 @@ Install [uv](https://docs.astral.sh/uv/), then:
 git clone https://github.com/wsrpc/wsrpc-aiohttp.git
 cd wsrpc-aiohttp
 uv sync --locked
-make test
-make linter
-make typing
-make docs
-make build
+uv run --locked pytask
 ```
 
-`make test` also executes the marked Python examples in the Markdown documentation with markdown-pytest. `make docs` builds Sphinx HTML with MyST and Furo, treating warnings as errors. The HTML is written to `docs/build/html`.
+The `tests` task also executes the marked Python examples in the Markdown documentation with markdown-pytest. The `docs` task builds Sphinx HTML with MyST and Furo, treating warnings as errors. The HTML is written to `docs/build/html`.
 
 ## Contents
 

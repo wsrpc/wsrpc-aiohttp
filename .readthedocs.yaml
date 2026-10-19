@@ -9,6 +9,6 @@ build:
       - uv sync --locked
     build:
       html:
-        - uv run --locked sphinx-build -W --keep-going -b html docs/source $READTHEDOCS_OUTPUT/html
+        - uv run --locked pytask -k "docs and not test_docs"
 sphinx:
   configuration: docs/source/conf.py

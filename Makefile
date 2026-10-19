@@ -2,17 +2,16 @@
 sync:
 	uv sync --locked
 test:
-	uv run --locked pytest --cov=wsrpc_aiohttp --cov-report=term-missing
+	uv run --locked pytask -k tests
 test-serializers:
-	uv run --locked --group serializers pytest
+	uv run --locked --group serializers pytask -k tests
 test-docs:
-	uv run --locked pytest README.md docs/source
+	uv run --locked pytask -k test_docs
 linter:
-	uv run --locked ruff check .
-	uv run --locked ruff format --check .
+	uv run --locked pytask -k lint
 typing:
-	uv run --locked mypy wsrpc_aiohttp tests/typing_contracts.py
+	uv run --locked pytask -k typing
 docs:
-	uv run --locked sphinx-build -W --keep-going -b html docs/source docs/build/html
+	uv run --locked pytask -k "docs and not test_docs"
 build:
-	uv build
+	uv run --locked pytask -k build

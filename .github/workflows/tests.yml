@@ -20,7 +20,7 @@ jobs:
           python-version: "3.14"
           enable-cache: true
       - run: uv sync --locked
-      - run: make linter typing docs build
+      - run: uv run --locked pytask -k "lint or typing or docs or build"
 
   tests:
     runs-on: ${{ matrix.os }}
@@ -47,7 +47,7 @@ jobs:
       - name: Verify free-threaded runtime
         if: endsWith(matrix.python, 't')
         run: uv run --locked python -c "import sys, wsrpc_aiohttp; assert not sys._is_gil_enabled()"
-      - run: uv run --locked pytest --cov=wsrpc_aiohttp --cov-report=term-missing --cov-report=xml
+      - run: uv run --locked pytask -k tests
       - name: Test custom JSON codecs
         if: ${{ !endsWith(matrix.python, 't') }}
-        run: uv run --locked --group serializers pytest
+        run: uv run --locked --group serializers pytask -k tests

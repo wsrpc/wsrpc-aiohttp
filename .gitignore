@@ -144,3 +144,6 @@ package-lock.json
 
 .pytest_cache/
 .ruff_cache/
+
+.pytask/
+pytask.lock

@@ -26,7 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
 ]
-dependencies = ["aiohttp>=3.12,<4", "yarl>=1.20"]
+dependencies = ["aiohttp", "yarl"]
 
 [project.urls]
 "Source" = "https://github.com/wsrpc/wsrpc-aiohttp"
@@ -46,6 +46,7 @@ dev = [
     "sphinx>=8,<10",
     "myst-parser>=4,<6",
     "furo>=2025.9.25",
+    "pytask>=0.6,<0.7",
 ]
 serializers = ["orjson>=3.11,<4"]
 uvloop = ["uvloop>=0.22,<1; sys_platform != 'win32'"]
@@ -56,7 +57,7 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-root = ""
-source-include = ["tests/**", "docs/**", "Makefile"]
+source-include = ["tests/**", "docs/**", "task_dev.py", "Makefile"]
 source-exclude = ["docs/build/**"]
 
 [tool.pytest.ini_options]
@@ -78,3 +79,7 @@ combine-as-imports = true
 python_version = "3.10"
 check_untyped_defs = true
 warn_unused_ignores = true
+
+[tool.pytask.ini_options]
+paths = ["task_dev.py"]
+force = true

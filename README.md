@@ -146,14 +146,12 @@ Install [uv](https://docs.astral.sh/uv/), then run:
 
 ```bash
 uv sync --locked
-make test        # pytest, including marked Markdown examples
-make linter     # Ruff checks and formatting
-make typing     # mypy
-make docs       # Sphinx + MyST + Furo, warnings are errors
-make build      # source distribution and wheel
+uv run --locked pytask         # all checks, docs and distributions
+uv run --locked pytask -k tests # pytest, including Markdown examples
+uv run --locked pytask -k lint  # Ruff checks and formatting
 ```
 
-The documentation is built into `docs/build/html`. To run only the Markdown examples, use `make test-docs`.
+The documentation is built into `docs/build/html`. To run only the Markdown examples, use `uv run --locked pytask -k test_docs`.
 
 ## Versioning
 
