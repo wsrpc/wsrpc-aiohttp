@@ -5,7 +5,7 @@ description = "WSRPC is the RPC over WebSocket for aiohttp"
 readme = "README.md"
 license = "Apache-2.0"
 keywords = ["wsrpc", "websocket", "rpc", "json-rpc", "js", "typescript", "javascript"]
-authors = [{name = "Dmitry Orlov", email = "me@mosquito.su"}]
+authors = [{name = "Dmitry Orlov", email = "orlovdl@gmail.com"}]
 requires-python = ">=3.10"
 classifiers = [
     "Topic :: Internet",
