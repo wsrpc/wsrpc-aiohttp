@@ -170,4 +170,3 @@ The sequence diagram for this case:
 ```{image} _static/loopback-call.svg
 
 ```
-

@@ -19,7 +19,7 @@ jobs:
           version: "0.13.1"
           python-version: "3.14"
           enable-cache: true
-      - run: uv sync --locked --group docs
+      - run: uv sync --locked
       - run: make linter typing docs build
 
   tests:

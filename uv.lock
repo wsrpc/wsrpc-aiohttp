@@ -2218,18 +2218,16 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "async-timeout", marker = "python_full_version < '3.11'" },
+    { name = "furo" },
     { name = "markdown-pytest" },
     { name = "mypy" },
+    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "myst-parser", version = "5.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pytest" },
     { name = "pytest-aiohttp" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
-]
-docs = [
-    { name = "furo" },
-    { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "myst-parser", version = "5.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "sphinx", version = "9.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -2250,17 +2248,15 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "async-timeout", marker = "python_full_version < '3.11'", specifier = ">=5,<6" },
+    { name = "furo", specifier = ">=2025.9.25" },
     { name = "markdown-pytest", specifier = ">=0.5,<1" },
     { name = "mypy", specifier = ">=1.18,<2" },
+    { name = "myst-parser", specifier = ">=4,<6" },
     { name = "pytest", specifier = ">=9,<10" },
     { name = "pytest-aiohttp", specifier = ">=1.1,<2" },
     { name = "pytest-asyncio", specifier = ">=1,<2" },
     { name = "pytest-cov", specifier = ">=7,<8" },
     { name = "ruff", specifier = ">=0.14,<1" },
-]
-docs = [
-    { name = "furo", specifier = ">=2025.9.25" },
-    { name = "myst-parser", specifier = ">=4,<6" },
     { name = "sphinx", specifier = ">=8,<10" },
 ]
 serializers = [{ name = "orjson", specifier = ">=3.11,<4" }]

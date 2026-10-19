@@ -6,9 +6,9 @@ build:
   jobs:
     install:
       - pip install uv
-      - uv sync --locked --only-group docs
+      - uv sync --locked
     build:
       html:
-        - uv run --locked --no-dev --group docs sphinx-build -W --keep-going -b html docs/source $READTHEDOCS_OUTPUT/html
+        - uv run --locked sphinx-build -W --keep-going -b html docs/source $READTHEDOCS_OUTPUT/html
 sphinx:
   configuration: docs/source/conf.py

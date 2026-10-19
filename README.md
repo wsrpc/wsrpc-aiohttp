@@ -145,7 +145,7 @@ Frontend code:
 Install [uv](https://docs.astral.sh/uv/), then run:
 
 ```bash
-uv sync --locked --group docs
+uv sync --locked
 make test        # pytest, including marked Markdown examples
 make linter     # Ruff checks and formatting
 make typing     # mypy

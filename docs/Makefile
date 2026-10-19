@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = uv run --locked --group docs sphinx-build
+SPHINXBUILD   = uv run --locked sphinx-build
 SPHINXPROJ    = WSRPC-aiohttp
 SOURCEDIR     = source
 BUILDDIR      = build

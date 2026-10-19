@@ -36,7 +36,7 @@ Install [uv](https://docs.astral.sh/uv/), then:
 ```shell
 git clone https://github.com/wsrpc/wsrpc-aiohttp.git
 cd wsrpc-aiohttp
-uv sync --locked --group docs
+uv sync --locked
 make test
 make linter
 make typing

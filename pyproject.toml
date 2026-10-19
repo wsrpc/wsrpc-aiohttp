@@ -43,8 +43,10 @@ dev = [
     "markdown-pytest>=0.5,<1",
     "ruff>=0.14,<1",
     "mypy>=1.18,<2",
+    "sphinx>=8,<10",
+    "myst-parser>=4,<6",
+    "furo>=2025.9.25",
 ]
-docs = ["sphinx>=8,<10", "myst-parser>=4,<6", "furo>=2025.9.25"]
 serializers = ["orjson>=3.11,<4"]
 uvloop = ["uvloop>=0.22,<1; sys_platform != 'win32'"]
 

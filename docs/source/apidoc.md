@@ -39,4 +39,3 @@
 .. automodule:: wsrpc_aiohttp.websocket.tools
    :members:
 ```
-

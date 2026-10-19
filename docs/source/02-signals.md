@@ -76,4 +76,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     aiohttp.web.run_app(app, port=8000, access_log=None)
 ```
-

@@ -1,6 +1,6 @@
 .PHONY: sync test test-serializers test-docs linter typing docs build
 sync:
-	uv sync --locked --group docs
+	uv sync --locked
 test:
 	uv run --locked pytest --cov=wsrpc_aiohttp --cov-report=term-missing
 test-serializers:
@@ -13,6 +13,6 @@ linter:
 typing:
 	uv run --locked mypy wsrpc_aiohttp tests/typing_contracts.py
 docs:
-	uv run --locked --group docs sphinx-build -W --keep-going -b html docs/source docs/build/html
+	uv run --locked sphinx-build -W --keep-going -b html docs/source docs/build/html
 build:
 	uv build
