@@ -12,9 +12,9 @@ from aiohttp.abc import AbstractView
 
 from wsrpc_aiohttp.signal import Signal
 
-from .abc import TimeoutType
+from .abc import DumpsType, LoadsType, TimeoutType
 from .common import ClientException, WSRPCBase
-from .tools import Lazy, awaitable
+from .tools import Lazy, awaitable, json_dumps
 
 global_log = logging.getLogger("wsrpc")
 log = logging.getLogger("wsrpc.handler")
@@ -41,7 +41,7 @@ class WebSocketBase(WSRPCBase, AbstractView):
     REQUEST_EXECUTION_TIMEOUT: TimeoutType | None = None
 
     JSON_LOADS = staticmethod(json.loads)
-    JSON_DUMPS = staticmethod(json.dumps)
+    JSON_DUMPS: DumpsType = staticmethod(json_dumps)
 
     ON_AUTH_SUCCESS: Signal[...] = Signal()
     ON_AUTH_FAIL: Signal[...] = Signal()
@@ -72,8 +72,8 @@ class WebSocketBase(WSRPCBase, AbstractView):
         keepalive_timeout=KEEPALIVE_PING_TIMEOUT,
         client_timeout=CLIENT_TIMEOUT,
         max_concurrent_requests=MAX_CONCURRENT_REQUESTS,
-        loads=json.loads,
-        dumps=json.dumps,
+        loads: LoadsType = json.loads,
+        dumps: DumpsType = json_dumps,
     ):
         """Configures the handler class
 

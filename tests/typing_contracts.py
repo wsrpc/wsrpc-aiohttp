@@ -1,7 +1,8 @@
 """Consumer contracts checked by mypy, including rejection of wrong types."""
 
+import json
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from wsrpc_aiohttp import Route, WebSocketAsync, WSRPCClient, decorators
 from wsrpc_aiohttp.signal import Signal
@@ -30,7 +31,20 @@ async def receive(value: int) -> None:
     pass
 
 
+def encode_json(value: Any) -> str:
+    return json.dumps(value)
+
+
+def encode_bytes(value: Any) -> bytes:
+    return json.dumps(value).encode()
+
+
 if TYPE_CHECKING:
+    Socket.configure(dumps=encode_json)
+    WSRPCClient("ws://example.org/ws/", dumps=encode_json)
+    Socket.configure(dumps=encode_bytes)  # type: ignore[arg-type]
+    WSRPCClient("ws://example.org/ws/", dumps=encode_bytes)  # type: ignore[arg-type]
+
     lazy = Lazy(lambda: 42)
     number: int = lazy.func()
     wrong_lazy: str = lazy.func()  # type: ignore[assignment]

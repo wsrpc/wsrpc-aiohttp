@@ -22,7 +22,7 @@ LocksCollectionType: TypeAlias = defaultdict[int, asyncio.Lock]
 FutureCollectionType: TypeAlias = defaultdict[int, asyncio.Future[Any]]
 TimeoutType: TypeAlias = int | float
 LoadsType: TypeAlias = Callable[..., Any]
-DumpsType: TypeAlias = Callable[..., str]
+DumpsType: TypeAlias = Callable[[Any], str]
 
 
 class AbstractWebSocket(ABC):

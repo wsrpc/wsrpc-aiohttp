@@ -1,5 +1,6 @@
 import base64
 import inspect
+import json
 from collections.abc import Awaitable, Callable, Coroutine
 from functools import singledispatch, wraps
 from typing import Any, ClassVar, Generic, ParamSpec, TypeVar, cast, overload
@@ -46,6 +47,12 @@ def _(value):
     return base64.b64encode(value).decode()
 
 
+def json_dumps(value: Any, **kwargs: Any) -> str:
+    """Encode JSON using registered serializers unless default is overridden."""
+    kwargs.setdefault("default", serializer)
+    return json.dumps(value, **kwargs)
+
+
 class SingletonMeta(type):
     def __new__(cls, clsname, superclasses, attributedict):
         klass: Any = type.__new__(cls, clsname, superclasses, attributedict)
@@ -86,4 +93,4 @@ def awaitable(func: Callable[P, Any]) -> Callable[P, Coroutine[Any, Any, Any]]:
     return wrap
 
 
-__all__ = ("Lazy", "Singleton", "awaitable", "serializer")
+__all__ = ("Lazy", "Singleton", "awaitable", "json_dumps", "serializer")

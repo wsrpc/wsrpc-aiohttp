@@ -30,7 +30,7 @@ from .abc import (
     TimeoutType,
 )
 from .route import Route
-from .tools import Singleton, awaitable, serializer
+from .tools import Singleton, awaitable, json_dumps
 
 
 class WSRPCError(Exception):
@@ -101,16 +101,17 @@ class WSRPCBase(AbstractWSRPC):
     _handlers: dict[str, AbstractRoute]
 
     def _dumps(self, value: t.Any) -> str:
-        return self._json_dumps(value, default=serializer)
+        return self._json_dumps(value)
 
     def __init__(
         self,
         loop: asyncio.AbstractEventLoop | None = None,
         timeout: TimeoutType | None = None,
         loads: LoadsType = json.loads,
-        dumps: DumpsType = json.dumps,
+        dumps: DumpsType = json_dumps,
     ):
-        self._json_dumps = dumps
+        # Preserve registered serializers for explicitly selected stdlib JSON.
+        self._json_dumps = json_dumps if dumps is json.dumps else dumps
         self._json_loads = loads
         self._loop = loop or asyncio.get_event_loop()
         self._handlers = {}
