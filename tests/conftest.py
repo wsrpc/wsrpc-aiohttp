@@ -7,7 +7,7 @@ import pytest
 from aiohttp import ClientSession
 from aiohttp.web import Application
 
-from wsrpc_aiohttp import WebSocketAsync, WSRPCClient
+from wsrpc_aiohttp import WebSocketAsync, WSRPCClient, serializer
 
 try:
     import orjson
@@ -23,7 +23,7 @@ if orjson is not None:
         pytest.param(
             dict(
                 loads=orjson.loads,
-                dumps=lambda x, **kw: orjson.dumps(x, **kw).decode(),
+                dumps=lambda x: orjson.dumps(x, default=serializer).decode(),
             ),
             id="orjson",
         )

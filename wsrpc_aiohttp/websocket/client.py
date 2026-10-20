@@ -6,8 +6,9 @@ from typing import TypeAlias, cast
 import aiohttp
 from yarl import URL
 
+from .abc import DumpsType, LoadsType
 from .common import WSRPCBase
-from .tools import Lazy, awaitable
+from .tools import Lazy, awaitable, json_dumps
 
 log = logging.getLogger(__name__)
 SocketType: TypeAlias = aiohttp.ClientWebSocketResponse | None
@@ -22,8 +23,8 @@ class WSRPCClient(WSRPCBase):
         loop=None,
         timeout=None,
         session: aiohttp.ClientSession | None = None,
-        loads=json.loads,
-        dumps=json.dumps,
+        loads: LoadsType = json.loads,
+        dumps: DumpsType = json_dumps,
         **kwargs,
     ):
         WSRPCBase.__init__(
