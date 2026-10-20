@@ -1,7 +1,24 @@
 # Bundled JavaScript client
 
-These files are from `@wsrpc/client` version **4.4.1**, distributed under the MIT license in `LICENSE`.
+Generated from the pinned release of `@wsrpc/client` published by
+[wsrpc-ts](https://github.com/wsrpc/wsrpc-ts). The client is distributed under
+the MIT license in `LICENSE`.
 
-Source archive: https://registry.npmjs.org/@wsrpc/client/-/client-4.4.1.tgz
+The PEP 517 build backend checks every bundled asset against `_build/client.json`.
+Missing or changed assets are fetched from the pinned npm archive, verified with
+SHA-512, and checked against the asset SHA-256 hashes before being copied here.
+Both wheel and sdist include the complete snapshot. Building an unchanged checkout
+or an sdist needs neither network access to npm nor Node.js.
 
-The wheel and source distribution include these files so `STATIC_DIR` works after a regular install. Building the Python package does not download frontend assets.
+To update the pinned client, run from the repository root:
+
+```sh
+python -m _build.client 4.5.1
+uv build
+```
+
+Replace the version with the desired published release. Commit `_build/client.json`
+and all changed static assets together. Do not edit the generated client here.
+Existing `STATIC_DIR` URLs are preserved, including `wsrpc.min.js` and
+`wsrpc.es6.js`; source maps, legacy TypeScript declarations, and the MIT license
+come from the same npm archive.

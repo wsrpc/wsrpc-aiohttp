@@ -52,11 +52,12 @@ uvloop = ["uvloop>=0.22,<1; sys_platform != 'win32'"]
 
 [build-system]
 requires = ["uv_build>=0.12,<0.13"]
-build-backend = "uv_build"
+build-backend = "_build.backend"
+backend-path = ["."]
 
 [tool.uv.build-backend]
 module-root = ""
-source-include = ["tests/**", "task_dev.py", "Makefile"]
+source-include = ["tests/**", "task_dev.py", "Makefile", "_build/**"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

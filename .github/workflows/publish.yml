@@ -26,6 +26,8 @@ jobs:
         run: uv version "${GITHUB_REF_NAME#v}"
       - name: Build package
         run: uv build
+      - name: Verify bundled browser client
+        run: python -m _build.check
       - uses: actions/upload-artifact@v7
         with:
           name: dist

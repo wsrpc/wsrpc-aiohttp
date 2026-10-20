@@ -1,5 +1,5 @@
 export namespace NWsRPC {
-    export module Main {
+    export namespace Main {
         export enum States {
             CONNECTING = 'CONNECTING',
             OPEN = 'OPEN',
@@ -74,11 +74,19 @@ export namespace NWsRPC {
             sendRaw(data: any): any;
         }
 
+        export interface Frame {
+            readonly direction: 'in' | 'out';
+            readonly data: string | ArrayBufferLike | ArrayBufferView | Blob;
+        }
+        export interface Options {
+            onFrame?: (frame: Frame) => unknown;
+        }
+
         export interface WSRPC {
             DEBUG: boolean;
             TRACE: boolean;
 
-            new(url: string): WSRPCPublic;
+            new(url: string, reconnectTimeout?: number, options?: Options): WSRPCPublic;
         }
     }
 }

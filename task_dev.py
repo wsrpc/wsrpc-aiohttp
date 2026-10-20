@@ -35,3 +35,4 @@ def task_test_readme() -> None:
 
 def task_build() -> None:
     subprocess.run(["uv", "build"], cwd=ROOT, check=True)
+    _python("_build.check")

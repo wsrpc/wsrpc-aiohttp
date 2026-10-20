@@ -1,85 +1,82 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
-  (global = global || self, global.WSRPC = factory());
-}(this, function () { 'use strict';
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.WSRPC = factory());
+})(this, (function () { 'use strict';
 
-  function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
+  function _arrayLikeToArray(r, a) {
+    (null == a || a > r.length) && (a = r.length);
+    for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+    return n;
   }
-
-  function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+  function _arrayWithoutHoles(r) {
+    if (Array.isArray(r)) return _arrayLikeToArray(r);
   }
-
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
-
-      return arr2;
-    }
+  function _classCallCheck(a, n) {
+    if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
   }
-
-  function _iterableToArray(iter) {
-    if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+  function _createClass(e, r, t) {
+    return Object.defineProperty(e, "prototype", {
+      writable: false
+    }), e;
   }
-
+  function _iterableToArray(r) {
+    if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r);
+  }
   function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance");
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+  function _toConsumableArray(r) {
+    return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread();
+  }
+  function _unsupportedIterableToArray(r, a) {
+    if (r) {
+      if ("string" == typeof r) return _arrayLikeToArray(r, a);
+      var t = {}.toString.call(r).slice(8, -1);
+      return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+    }
   }
 
-  var Deferred = function Deferred() {
+  var Deferred = /*#__PURE__*/_createClass(function Deferred() {
     _classCallCheck(this, Deferred);
-
     var self = this;
     self.resolve = null;
     self.reject = null;
     self.done = false;
-
     function wrapper(func) {
       return function () {
         if (self.done) {
           console.error(new Error('Promise already done'));
           return;
         }
-
         self.done = true;
         return func.apply(this, arguments);
       };
     }
-
     self.promise = new Promise(function (resolve, reject) {
       self.resolve = wrapper(resolve);
       self.reject = wrapper(reject);
     });
-
     self.promise.isPending = function () {
       return !self.done;
     };
-
     return self;
-  };
-
+  });
   function logGroup(group, level, args) {
     console.group(group);
     console[level].apply(this, args);
     console.groupEnd();
   }
-
   function log() {
     if (!WSRPC.DEBUG) return;
     logGroup('WSRPC.DEBUG', 'trace', arguments);
   }
-
   function trace(msg) {
     if (!WSRPC.TRACE) return;
     var payload = msg;
     if ('data' in msg) payload = JSON.parse(msg.data);
     logGroup("WSRPC.TRACE", 'trace', [payload]);
   }
-
   function getAbsoluteWsUrl(url) {
     if (/^\w+:\/\//.test(url)) return url;
     if (typeof window == 'undefined' && window.location.host.length < 1) throw new Error("Can not construct absolute URL from ".concat(window.location));
@@ -89,14 +86,12 @@
     var path = url.replace(/^\/+/gm, '');
     return "".concat(scheme, "//").concat(host).concat(port, "/").concat(path);
   }
-
   function buildProxyMethodHandler(property) {
     return {
       get: function get(handler, childProperty) {
         if (childProperty.startsWith('_')) {
           return handler[childProperty];
         }
-
         var newProperty = property ? "".concat(property, ".").concat(childProperty) : childProperty;
         return new Proxy(handler, buildProxyMethodHandler(newProperty));
       },
@@ -105,19 +100,16 @@
       }
     };
   }
-
   var readyState = Object.freeze({
     0: 'CONNECTING',
     1: 'OPEN',
     2: 'CLOSING',
     3: 'CLOSED'
   });
-
-  var WSRPC = function WSRPC(URL) {
+  var WSRPC = /*#__PURE__*/_createClass(function WSRPC(URL) {
     var reconnectTimeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1000;
-
+    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     _classCallCheck(this, WSRPC);
-
     var self = this;
     URL = getAbsoluteWsUrl(URL);
     self.id = 1;
@@ -137,36 +129,60 @@
       onchange: []
     };
     self.callQueue = [];
-
+    function reportObserverError(error) {
+      try {
+        console.error(error);
+      } catch (_) {/* Observers never affect RPC. */}
+    }
+    function observeFrame(direction, data) {
+      try {
+        if (!options || typeof options.onFrame !== 'function') return;
+        // Observers receive a snapshot, never a mutable transport buffer.
+        if (ArrayBuffer.isView(data)) {
+          var copy = new Uint8Array(data.byteLength);
+          copy.set(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+          data = copy;
+        } else if (Object.prototype.toString.call(data) === '[object ArrayBuffer]' || Object.prototype.toString.call(data) === '[object SharedArrayBuffer]') {
+          data = data.slice(0);
+        }
+        Promise.resolve(options.onFrame(Object.freeze({
+          direction: direction,
+          data: data
+        }))).catch(reportObserverError);
+      } catch (error) {
+        reportObserverError(error);
+      }
+    }
+    function send(data) {
+      var result = self.socket.send(data);
+      observeFrame('out', data);
+      return result;
+    }
     function createSocket() {
       var ws = new WebSocket(URL);
-
       var rejectQueue = function rejectQueue() {
         self.connectionNumber++; // rejects incoming calls
+        var deferred;
 
-        var deferred; //reject all pending calls
-
+        //reject all pending calls
         while (0 < self.callQueue.length) {
           var callObj = self.callQueue.shift();
           deferred = self.store[callObj.id];
           delete self.store[callObj.id];
-
           if (deferred && deferred.promise.isPending()) {
             deferred.reject('WebSocket error occurred');
           }
-        } // reject all from the store
+        }
 
-
+        // reject all from the store
         for (var key in self.store) {
           if (!self.store.hasOwnProperty(key)) continue;
           deferred = self.store[key];
-
           if (deferred && deferred.promise.isPending()) {
             deferred.reject('WebSocket error occurred');
           }
         }
       };
-
       function reconnect(callEvents) {
         setTimeout(function () {
           try {
@@ -179,25 +195,20 @@
           }
         }, reconnectTimeout);
       }
-
       ws.onclose = function (err) {
         log('ONCLOSE CALLED', 'STATE', self.public.state());
         trace(err);
-
         for (var serial in self.store) {
           if (!self.store.hasOwnProperty(serial)) continue;
-
           if (self.store[serial].hasOwnProperty('reject')) {
             self.store[serial].reject('Connection closed');
           }
         }
-
         rejectQueue();
         callEvents('onclose', err);
         callEvents('onchange', err);
         reconnect(callEvents);
       };
-
       ws.onerror = function (err) {
         log('ONERROR CALLED', 'STATE', self.public.state());
         trace(err);
@@ -206,7 +217,6 @@
         callEvents('onchange', err);
         log('WebSocket has been closed by error: ', err);
       };
-
       function tryCallEvent(func, event) {
         try {
           return func(event);
@@ -216,66 +226,56 @@
           } else {
             log('Event function', func, 'raised unknown error:', e);
           }
-
           console.error(e);
         }
       }
-
       function callEvents(evName, event) {
         while (0 < self.oneTimeEventStore[evName].length) {
           var deferred = self.oneTimeEventStore[evName].shift();
           if (deferred.hasOwnProperty('resolve') && deferred.promise.isPending()) deferred.resolve();
         }
-
         for (var i in self.eventStore[evName]) {
           if (!self.eventStore[evName].hasOwnProperty(i)) continue;
           var cur = self.eventStore[evName][i];
           tryCallEvent(cur, event);
         }
       }
-
       ws.onopen = function (ev) {
         log('ONOPEN CALLED', 'STATE', self.public.state());
         trace(ev);
-
         while (0 < self.callQueue.length) {
           // noinspection JSUnresolvedFunction
-          self.socket.send(JSON.stringify(self.callQueue.shift(), 0, 1));
+          send(JSON.stringify(self.callQueue.shift(), 0, 1));
         }
-
         callEvents('onconnect', ev);
         callEvents('onchange', ev);
       };
-
       function handleCall(self, data) {
         if (!self.routes.hasOwnProperty(data.method)) throw new Error('Route not found');
         var connectionNumber = self.connectionNumber;
         var deferred = new Deferred();
         deferred.promise.then(function (result) {
           if (connectionNumber !== self.connectionNumber) return;
-          self.socket.send(JSON.stringify({
+          send(JSON.stringify({
             id: data.id,
             result: result || null
           }));
         }, function (error) {
           if (connectionNumber !== self.connectionNumber) return;
-          self.socket.send(JSON.stringify({
+          send(JSON.stringify({
             id: data.id,
             error: error || null
           }));
         });
         var func = self.routes[data.method];
         if (self.asyncRoutes[data.method]) return func.apply(deferred, [data.params]);
-
         function badPromise() {
           throw new Error("You should register route with async flag.");
         }
-
         var promiseMock = {
           resolve: badPromise,
           reject: badPromise
         };
-
         try {
           deferred.resolve(func.apply(promiseMock, [data.params]));
         } catch (e) {
@@ -283,7 +283,6 @@
           console.error(e);
         }
       }
-
       function handleError(self, data) {
         if (!self.store.hasOwnProperty(data.id)) return log('Unknown callback');
         var deferred = self.store[data.id];
@@ -292,33 +291,27 @@
         log('REJECTING', data.error);
         deferred.reject(data.error);
       }
-
       function handleResult(self, data) {
         var deferred = self.store[data.id];
         if (typeof deferred === 'undefined') return log('Confirmation without handler');
         delete self.store[data.id];
-
         if (data.hasOwnProperty('result')) {
           return deferred.resolve(data.result);
         }
-
         return deferred.reject(data.error);
       }
-
       ws.onmessage = function (message) {
+        observeFrame('in', message.data);
         log('ONMESSAGE CALLED', 'STATE', self.public.state());
         trace(message);
         if (message.type !== 'message') return;
         var data;
-
         try {
           data = JSON.parse(message.data);
           log(data);
-
           if (!data.hasOwnProperty('id')) {
             var current;
             console.group("Event received");
-
             for (var i = 0; i < self.socketEventsListeners.length; i++) {
               try {
                 current = self.socketEventsListeners[i];
@@ -327,7 +320,6 @@
                 console.error(e);
               }
             }
-
             console.groupEnd();
           } else if (data.hasOwnProperty('method')) {
             return handleCall(self, data);
@@ -342,14 +334,12 @@
             result: null,
             id: data ? data.id : null
           };
-          self.socket.send(JSON.stringify(err));
+          send(JSON.stringify(err));
           console.error(exception);
         }
       };
-
       return ws;
     }
-
     function makeCall(func, args, params) {
       self.id += 2;
       var deferred = new Deferred();
@@ -359,17 +349,15 @@
         params: args
       });
       var state = self.public.state();
-
       if (state === 'OPEN') {
         self.store[self.id] = deferred;
-        self.socket.send(JSON.stringify(callObj));
+        send(JSON.stringify(callObj));
       } else if (state === 'CONNECTING') {
         log('SOCKET IS', state);
         self.store[self.id] = deferred;
         self.callQueue.push(callObj);
       } else {
         log('SOCKET IS', state);
-
         if (params && params['noWait']) {
           deferred.reject("Socket is: ".concat(state));
         } else {
@@ -377,10 +365,8 @@
           self.callQueue.push(callObj);
         }
       }
-
       return deferred.promise;
     }
-
     self.socketEventsListeners = [function (event) {
       console.log(event);
     }];
@@ -442,7 +428,7 @@
         return self.socketEventsListeners.splice(index, 1).length;
       },
       sendRaw: function sendRaw(data) {
-        return self.socket.send(data);
+        return send(data);
       }
     });
     self.public.addRoute('log', function (argsObj) {
@@ -452,8 +438,7 @@
       return data;
     });
     return self.public;
-  };
-
+  });
   WSRPC.DEBUG = false;
   WSRPC.TRACE = false;
 
