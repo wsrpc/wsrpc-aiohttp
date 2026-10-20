@@ -133,7 +133,7 @@ The example selects `wss://` on HTTPS pages and `ws://` on HTTP pages. A complet
 
 ## JSON codecs
 
-Messages use the standard library `json` module. To use another codec, pass `loads` and `dumps` to `WSRPCClient` or `WebSocketAsync.configure()`. 
+Messages use the standard library `json` module. To use another codec, pass `loads` and `dumps` to `WSRPCClient` or `WebSocketAsync.configure()`.
 
 The `dumps` callback takes one value and returns `str`; it controls serialization of custom types. The default codec and an explicit `json.dumps` use `serializer.register`. For another codec, bind `default=serializer` yourself if needed; WSRPC does not override your codec settings.
 
