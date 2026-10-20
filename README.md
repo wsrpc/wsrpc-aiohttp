@@ -137,6 +137,8 @@ Messages use the standard library `json` module. To use another codec, pass `loa
 
 ## Development
 
+Building distributions from this repository requires Git, Node.js >=22 and npm: the browser client is built from current [wsrpc-ts](https://github.com/wsrpc/wsrpc-ts) sources. Installing a wheel or building from an sdist does not require Node.js. See [client build details](wsrpc_aiohttp/static/README.md) for revision selection and provenance.
+
 Install [uv](https://docs.astral.sh/uv/), clone the repository, then run:
 
 ```shell

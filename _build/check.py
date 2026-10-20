@@ -1,4 +1,4 @@
-"""Verify that wheel and sdist contain the complete locked client snapshot."""
+"""Verify that wheel and sdist contain the complete client snapshot."""
 
 import hashlib
 import json
@@ -32,9 +32,14 @@ def check(directory: Path) -> None:
                 assert stream is not None
                 if hashlib.sha256(stream.read()).hexdigest() != digest:
                     raise ValueError(f"Client asset mismatch: {path}: {name}")
-            for name in ("backend.py", "client.py", "client.json"):
+            for name in (
+                "backend.py",
+                "client.py",
+                "client.json",
+                "sdist-client",
+            ):
                 source.getmember(f"{prefix}/_build/{name}")
-    print("Wheel and sdist contain the verified @wsrpc/client snapshot")
+    print("Wheel and sdist contain the verified wsrpc-ts client snapshot")
 
 
 if __name__ == "__main__":

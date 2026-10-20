@@ -1,10 +1,10 @@
-"""Include the pinned wsrpc-ts browser client before delegating to uv_build."""
+"""Build the current wsrpc-ts browser client before delegating to uv_build."""
 
 from typing import Any
 
 import uv_build
 
-from .client import ensure_client
+from .client import ensure_client, freeze_snapshot
 
 
 def __getattr__(name: str) -> Any:
@@ -12,8 +12,9 @@ def __getattr__(name: str) -> Any:
 
 
 def build_sdist(sdist_directory: str, config_settings: Any = None) -> str:
-    ensure_client()
-    return uv_build.build_sdist(sdist_directory, config_settings)
+    ensure_client(fresh=True)
+    with freeze_snapshot():
+        return uv_build.build_sdist(sdist_directory, config_settings)
 
 
 def build_wheel(
@@ -21,7 +22,7 @@ def build_wheel(
     config_settings: Any = None,
     metadata_directory: str | None = None,
 ) -> str:
-    ensure_client()
+    ensure_client(fresh=True)
     return uv_build.build_wheel(
         wheel_directory, config_settings, metadata_directory
     )

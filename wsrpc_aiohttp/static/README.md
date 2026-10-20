@@ -1,24 +1,28 @@
 # Bundled JavaScript client
 
-Generated from the pinned release of `@wsrpc/client` published by
-[wsrpc-ts](https://github.com/wsrpc/wsrpc-ts). The client is distributed under
-the MIT license in `LICENSE`.
+Generated directly from [wsrpc-ts](https://github.com/wsrpc/wsrpc-ts).
+The client is distributed under the MIT license in `LICENSE`.
+`client-source.json` records the exact Git commit and package-lock checksum
+used to produce these assets.
 
-The PEP 517 build backend checks every bundled asset against `_build/client.json`.
-Missing or changed assets are fetched from the pinned npm archive, verified with
-SHA-512, and checked against the asset SHA-256 hashes before being copied here.
-Both wheel and sdist include the complete snapshot. Building an unchanged checkout
-or an sdist needs neither network access to npm nor Node.js.
+Building a wheel or sdist from the Python repository fetches the current upstream
+Git `HEAD`, runs `npm ci --ignore-scripts` and `node tools/build-client.mjs`, then
+bundles the resulting ESM, UMD, minified JavaScript, source maps, legacy TypeScript
+declarations, and license. This requires Git, Node.js >=22, npm, and network access.
+It does not wait for an npm release of `@wsrpc/client`.
 
-To update the pinned client, run from the repository root:
+The sdist contains the finished client and a frozen build manifest. Building a
+wheel from that sdist needs neither Git, Node.js nor access to GitHub/npm. A
+corrupted snapshot fails validation instead of silently selecting another client.
+Editable installs reuse a valid local snapshot.
+
+To reproduce a specific client revision when building from the Python repository:
 
 ```sh
-python -m _build.client 4.5.1
-uv build
+WSRPC_CLIENT_REF=7af746dd053d0a082f83afe51f74d198c486b69a uv build
 ```
 
-Replace the version with the desired published release. Commit `_build/client.json`
-and all changed static assets together. Do not edit the generated client here.
-Existing `STATIC_DIR` URLs are preserved, including `wsrpc.min.js` and
-`wsrpc.es6.js`; source maps, legacy TypeScript declarations, and the MIT license
-come from the same npm archive.
+A Git tag or branch is also accepted. Without `WSRPC_CLIENT_REF`, a new source
+build fetches current upstream `HEAD` even when the local snapshot is valid.
+To refresh the snapshot alone, run `python -m _build.client [GIT_REF]`.
+Do not edit generated JavaScript here. Existing `STATIC_DIR` URLs are preserved.

@@ -1,8 +1,9 @@
 {
   "module": "wsrpc_aiohttp",
-  "version": "4.5.1",
-  "url": "https://registry.npmjs.org/@wsrpc/client/-/client-4.5.1.tgz",
-  "integrity": "sha512-TQo6BW9+HXgv/OXQniVs/ZmYOF21TEAlMkUjO6tKuwg13yrJeobplUtTkgmcuaH9ehjc6IFJYXZPh++0t8tRAQ==",
+  "repository": "https://github.com/wsrpc/wsrpc-ts.git",
+  "ref": "HEAD",
+  "commit": "7af746dd053d0a082f83afe51f74d198c486b69a",
+  "package_lock_sha256": "8f0a20f3edf3d10140ec86dd6ddf888a4567f954cd85e8da3cc4f9f053d2ecc3",
   "files": {
     "LICENSE": "b509836c4c486bc7e781410e5471390c0df9dd0c293ff06c5dc8242fe240f672",
     "wsrpc.d.ts": "fe49ef11a25b94078ffb672168a301693702c2ec75ec59db48873e7ba9435484",
@@ -10,6 +11,7 @@
     "wsrpc.js": "7354fb226c9325e3ad9d026fbd2d45584dd14955657284aa024d6b94d3ca0e09",
     "wsrpc.js.map": "095f0c6fc039b2d18e79d5d749bf9f90810f4a4eb7fc4c1d21d1592c5c6fc3fd",
     "wsrpc.min.js": "d06a22074948295df20f08922e55a5a77fdad3d7508169b2b4a74b48336a3fc6",
-    "wsrpc.min.js.map": "08a89283ef21caaec2d9d706de12a32ba3c7ab56f968e282221b3bd7352f2824"
+    "wsrpc.min.js.map": "08a89283ef21caaec2d9d706de12a32ba3c7ab56f968e282221b3bd7352f2824",
+    "client-source.json": "0567dc07a45230c21e65b48b63495fce00c2f62f51eba9895424ff7ca92aabba"
   }
 }
